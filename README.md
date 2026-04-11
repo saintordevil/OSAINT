@@ -24,6 +24,7 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 
 - Node.js 18+
 - Windows / macOS / Linux
+- **PowerShell** or **Windows Terminal** recommended on Windows (cmd.exe may not display animations correctly)
 
 ## Install
 
