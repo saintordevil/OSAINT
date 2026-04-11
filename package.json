@@ -1,0 +1,26 @@
+{
+  "name": "osaint",
+  "version": "1.0.0",
+  "description": "OSAINT - Reveal the identity behind a share link",
+  "main": "osaint.js",
+  "bin": {
+    "osaint": "./osaint.js"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node osaint.js",
+    "test": "node osaint.js --test"
+  },
+  "keywords": [
+    "osint",
+    "share-link",
+    "identity",
+    "tracker"
+  ],
+  "author": "OSAINT",
+  "license": "MIT",
+  "dependencies": {
+    "node-tls-client": "^2.1.0",
+    "unicode-animations": "^1.0.3"
+  }
+}
