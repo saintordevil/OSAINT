@@ -11,6 +11,7 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 | **TikTok** | Username, name, avatar, followers, private status | `shareUser` data from mobile page render |
 | **Instagram** | Username, user ID, name, avatar | `igsh` parameter / embedded page JSON |
 | **Discord** | Username, user ID, avatar, account creation date | Public invite API |
+| **Claude** | Display name, user UUID | Chat snapshots API |
 | **Perplexity** | Username, avatar, user ID | Thread REST API |
 | **Microsoft** | Email address | Decoded from SharePoint URL path (offline) |
 | **Pinterest** | Username, user ID, name, avatar | Invite metadata API |
@@ -75,6 +76,8 @@ Each platform handles share links differently:
 - **Instagram** -- The `igsh` parameter in share URLs is a tracking ID tied to the sharer's account. Instagram embeds the sharer's profile in the page response via `xdt_get_relationship_for_shid_logged_out`. Availability varies per share and is controlled server-side.
 
 - **Discord** -- Invite codes are resolved via Discord's public API (`/api/v9/invites/{code}`), which returns the inviter's username, ID, avatar, and account creation date (decoded from the snowflake ID).
+
+- **Claude** -- Share links are resolved via the `chat_snapshots` API endpoint, which returns the creator's display name and UUID. Uses TLS fingerprint impersonation to bypass CloudFlare.
 
 - **Microsoft SharePoint** -- The sharer's email is encoded directly in the URL path as `first_last_domain_tld`. Decoded offline with no HTTP request needed.
 
