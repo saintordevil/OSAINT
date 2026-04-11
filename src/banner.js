@@ -9,6 +9,14 @@ const CONFIG_PATH = join(__dir, '..', '.osaint-config.json');
 
 const BOX_W = 63;
 
+const DISPLAY_NAMES = {
+    tiktok: 'TikTok', instagram: 'Instagram', discord: 'Discord',
+    perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
+    substack: 'Substack', suno: 'Suno', telegram: 'Telegram',
+    twitch: 'Twitch', reddit: 'Reddit',
+};
+function displayName(name) { return DISPLAY_NAMES[name] || name; }
+
 // ─── BOX PRIMITIVES ──────────────────────────────────────────────────────────
 
 function line(c = '=') { return `   ${DG}+${c.repeat(BOX_W)}+${RST}`; }
@@ -170,7 +178,7 @@ export function printTargetBox(platform, url) {
     const truncUrl = url.length > maxUrl ? url.substring(0, maxUrl - 3) + '...' : url;
     console.log([
         line('-'),
-        row(`${DG}Platform ${DG}>>${RST}  ${W}${platform}${RST}`),
+        row(`${DG}Platform ${DG}>>${RST}  ${W}${displayName(platform)}${RST}`),
         row(`${DG}Target   ${DG}>>${RST}  ${DIM}${W}${truncUrl}${RST}`),
         line('-'),
         '',
@@ -184,7 +192,7 @@ export function printResults(data, platform) {
     const mid = line('-');
 
     const lines = [top];
-    lines.push(row(`${DG}>>${RST} ${W}Results ${DG}::${RST} ${C}${platform}${RST}`));
+    lines.push(row(`${DG}>>${RST} ${W}Results ${DG}::${RST} ${C}${displayName(platform)}${RST}`));
     lines.push(mid);
 
     for (const [key, value] of Object.entries(data)) {
@@ -221,14 +229,9 @@ export function printPlatformList(platforms) {
     lines.push(row(`${DG}>>${RST} ${W}Supported Platforms${RST}`));
     lines.push(mid);
 
-    const displayNames = {
-        tiktok: 'TikTok', instagram: 'Instagram', discord: 'Discord',
-        perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
-        substack: 'Substack', suno: 'Suno', telegram: 'Telegram',
-        twitch: 'Twitch', reddit: 'Reddit',
-    };
+    const dn = displayName;
     for (const p of platforms) {
-        const name = (displayNames[p.name] || p.name).padEnd(12);
+        const name = dn(p.name).padEnd(12);
         lines.push(row(`   ${DG}>>${RST} ${W}${name}${RST} ${DG}${p.desc}${RST}`));
     }
 
@@ -428,4 +431,4 @@ export function showBannerPreviews() {
     console.log('');
 }
 
-export { line, row, empty, BOX_W };
+export { line, row, empty, BOX_W, displayName };

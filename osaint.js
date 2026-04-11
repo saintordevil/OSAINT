@@ -3,7 +3,7 @@
 // ─── OSAINT ──────────────────────────────────────────────────────────────────
 // Share Link Intelligence - Reveal public metadata behind share links
 
-import { printBanner, printTargetBox, printResults, printError, printPlatformList, printHelp, printCommands, printHowTo } from './src/banner.js';
+import { printBanner, printTargetBox, printResults, printError, printPlatformList, printHelp, printCommands, printHowTo, displayName } from './src/banner.js';
 import { getSpinner, runStep, resetSteps } from './src/spinner.js';
 import { detectPlatform, listPlatforms, loadParser } from './src/router.js';
 import { C, G, R, DG, DIM, W, RST, SHOW } from './src/colors.js';
@@ -116,14 +116,15 @@ async function main() {
     s.reset();
 
     // Step 1: Load module
-    const parser = await runStep(`Loading ${platform.name} module`, async () => {
+    const pName = displayName(platform.name);
+    const parser = await runStep(`Loading ${pName} module`, async () => {
         const p = await loadParser(platform.name);
-        if (!p) throw new Error(`No parser found for ${platform.name}`);
+        if (!p) throw new Error(`No parser found for ${pName}`);
         return p;
     });
 
     // Step 2: Analyze
-    const result = await runStep(`Analyzing ${platform.name} share link`, async () => {
+    const result = await runStep(`Analyzing ${pName} share link`, async () => {
         return await parser(url);
     });
 
