@@ -127,7 +127,7 @@ function loadConfig() {
     try {
         if (existsSync(CONFIG_PATH)) return JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
     } catch {}
-    return { bannerStyle: 4 }; // default: Elite
+    return { bannerStyle: 2 }; // default: ANSI Shadow (original)
 }
 
 function saveConfig(cfg) {
@@ -151,7 +151,7 @@ export function printBanner() {
     const mid = line('-');
     const cfg = loadConfig();
     const styles = getStyles();
-    const style = styles[(cfg.bannerStyle || 4) - 1] || styles[3];
+    const style = styles[(cfg.bannerStyle || 2) - 1] || styles[1];
 
     const lines = [
         '', top, empty(),
