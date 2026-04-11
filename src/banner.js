@@ -11,7 +11,7 @@ const BOX_W = 63;
 
 const DISPLAY_NAMES = {
     tiktok: 'TikTok', instagram: 'Instagram', discord: 'Discord',
-    perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
+    claude: 'Claude', perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
     substack: 'Substack', suno: 'Suno', telegram: 'Telegram',
     twitch: 'Twitch', reddit: 'Reddit',
 };

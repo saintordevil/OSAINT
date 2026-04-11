@@ -172,6 +172,7 @@ async function selfTest() {
             ['https://vm.tiktok.com/abc123/',            'tiktok'],
             ['https://www.instagram.com/reel/abc123/',   'instagram'],
             ['https://discord.gg/abc123',                'discord'],
+            ['https://claude.ai/share/abcd-1234-efgh',   'claude'],
             ['https://www.perplexity.ai/search/query',   'perplexity'],
             ['https://x-my.sharepoint.com/:f:/g/personal/a_b_c_com/x', 'microsoft'],
             ['https://pin.it/abc123',                    'pinterest'],

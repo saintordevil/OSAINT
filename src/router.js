@@ -2,6 +2,7 @@ const PLATFORMS = [
     { name: 'tiktok',     pattern: /(?:vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t)\//i,   desc: 'TikTok share links' },
     { name: 'instagram',  pattern: /instagram\.com\/(reel|p)\//i,                              desc: 'Instagram reels & posts' },
     { name: 'discord',    pattern: /(?:discord\.com\/invite|discord\.gg)\//i,                   desc: 'Discord invite links' },
+    { name: 'claude',     pattern: /claude\.ai\/share\/[a-f0-9-]+/i,                            desc: 'Claude shared conversations' },
     { name: 'perplexity', pattern: /perplexity\.ai\/search\//i,                                 desc: 'Perplexity search threads' },
     { name: 'microsoft',  pattern: /sharepoint\.com\/:[a-z]:\/g\/personal\//i,                  desc: 'SharePoint / OneDrive links' },
     { name: 'pinterest',  pattern: /pin\.it\//i,                                                desc: 'Pinterest share links' },
