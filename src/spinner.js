@@ -1,16 +1,16 @@
-import spinners from 'unicode-animations';
+import { getSelectedAnimations } from './animations.js';
 import { C, G, R, DG, W, DIM, RST, CLR, HIDE, SHOW } from './colors.js';
 
 const MIN_DISPLAY_MS = 1200;
 
 // ─── PERSISTENT SPINNER ──────────────────────────────────────────────────────
 // Two animation types:
-//   scan = loading / active work (moving bar)
-//   rain = completed / idle (falling dots)
+//   loading = active work (configurable, default: scan)
+//   idle    = completed / done lines (configurable, default: rain)
 //
 // How it works: completed steps are tracked in _lines[]. On every frame,
 // we cursor-up to the first tracked line, redraw all of them with the current
-// rain frame, then redraw the active line at the bottom with scan.
+// idle frame, then redraw the active line at the bottom with the loading anim.
 
 export class Spinner {
     constructor() {
@@ -21,6 +21,11 @@ export class Spinner {
         this._mode = 'scan';
         this._lines = [];       // {text, isError} - completed step lines
         this._linesOnScreen = 0; // how many lines are currently rendered
+
+        // Load configured animations
+        const sel = getSelectedAnimations();
+        this._loadingAnim = sel.loading;
+        this._idleAnim    = sel.idle;
     }
 
     // Start spinner with a loading message
@@ -90,14 +95,16 @@ export class Spinner {
 
     _restartTimer() {
         this._clearTimer();
-        this._timer = setInterval(() => this._draw(), 100);
+        // Use the faster of the two animation intervals for smooth rendering
+        const tick = Math.min(this._loadingAnim.interval, this._idleAnim.interval);
+        this._timer = setInterval(() => this._draw(), tick);
     }
 
     _draw() {
-        const rainFrames = spinners.rain.frames;
-        const scanFrames = spinners.scan.frames;
-        const rf = rainFrames[this._fi % rainFrames.length];
-        const sf = scanFrames[this._fi % scanFrames.length];
+        const idleFrames    = this._idleAnim.frames;
+        const loadingFrames = this._loadingAnim.frames;
+        const rf = idleFrames[this._fi % idleFrames.length];
+        const sf = loadingFrames[this._fi % loadingFrames.length];
 
         // Move cursor up to redraw all tracked lines + active line
         const upCount = this._linesOnScreen; // lines above the active line

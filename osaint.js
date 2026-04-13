@@ -18,9 +18,12 @@ const flags = {
     test:     args.includes('--test'),
     help:     args.includes('--help')     || args.includes('-h'),
     banner:   args.includes('--banner'),
+    animations: args.includes('--animations') || args.includes('--anim'),
     commands: args.includes('--commands') || args.includes('--cmd'),
     howto:    args.includes('--howto')    || args.includes('--how'),
-    setBanner: args.find(a => a.startsWith('--set-banner='))?.split('=')[1],
+    setBanner:  args.find(a => a.startsWith('--set-banner='))?.split('=')[1],
+    setLoading: args.find(a => a.startsWith('--set-loading='))?.split('=')[1],
+    setIdle:    args.find(a => a.startsWith('--set-idle='))?.split('=')[1],
 };
 const url = args.find(a => !a.startsWith('-'));
 
@@ -52,6 +55,40 @@ async function main() {
         setBannerStyle(num);
         console.log(`\n   ${C}>>>${RST} ${W}Banner set to Style ${num}: ${names[num - 1]}${RST}\n`);
         printBanner();
+        return;
+    }
+
+    if (flags.setLoading) {
+        const { setLoadingAnimation, getAnimationCount, getAnimationNames } = await import('./src/animations.js');
+        const count = getAnimationCount();
+        const num = parseInt(flags.setLoading);
+        if (isNaN(num) || num < 1 || num > count) {
+            console.log(`\n   ${R}Invalid animation.${RST} Pick 1-${count}. Run ${W}--animations${RST} to see all.\n`);
+            return;
+        }
+        setLoadingAnimation(num);
+        const names = getAnimationNames();
+        console.log(`\n   ${C}>>>${RST} ${W}Loading animation set to ${num}: ${names[num - 1]}${RST}\n`);
+        return;
+    }
+
+    if (flags.setIdle) {
+        const { setIdleAnimation, getAnimationCount, getAnimationNames } = await import('./src/animations.js');
+        const count = getAnimationCount();
+        const num = parseInt(flags.setIdle);
+        if (isNaN(num) || num < 1 || num > count) {
+            console.log(`\n   ${R}Invalid animation.${RST} Pick 1-${count}. Run ${W}--animations${RST} to see all.\n`);
+            return;
+        }
+        setIdleAnimation(num);
+        const names = getAnimationNames();
+        console.log(`\n   ${C}>>>${RST} ${W}Idle animation set to ${num}: ${names[num - 1]}${RST}\n`);
+        return;
+    }
+
+    if (flags.animations) {
+        const { showAnimationPreviews } = await import('./src/animations.js');
+        showAnimationPreviews();
         return;
     }
 
