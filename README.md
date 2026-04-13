@@ -58,13 +58,20 @@ node osaint.js "https://vm.tiktok.com/abc123/" -q --json
 ## Commands
 
 ```bash
-node osaint.js --help          # Quick usage guide
-node osaint.js --howto         # Detailed guide per platform
-node osaint.js --commands      # Full command list
-node osaint.js --list          # Show all supported platforms
-node osaint.js --test          # Run self-test suite
-node osaint.js --banner        # Preview all banner styles
-node osaint.js --set-banner=N  # Set banner to style N (1-12)
+node osaint.js --help            # Quick usage guide
+node osaint.js --howto           # Detailed guide per platform
+node osaint.js --commands        # Full command list
+node osaint.js --list            # Show all supported platforms
+node osaint.js --test            # Run self-test suite
+
+# Banner customization
+node osaint.js --banner          # Preview all 13 banner styles
+node osaint.js --set-banner=N    # Set banner to style N
+
+# Animation customization
+node osaint.js --animations      # Preview all 60 animation styles
+node osaint.js --set-loading=N   # Set the active/scanning animation
+node osaint.js --set-idle=N      # Set the completed/idle animation
 ```
 
 ## How It Works
@@ -89,9 +96,9 @@ Each platform handles share links differently:
 
 - Uses `node-tls-client` for Chrome TLS fingerprint impersonation to bypass CloudFlare and bot detection
 - Mobile Android User-Agent for TikTok (required -- TikTok only serves sharer data to mobile browsers)
-- Braille unicode spinner animations via `unicode-animations`
-- 12 swappable ASCII art banner styles
-- Persistent config saved to `.osaint-config.json`
+- 60 customizable spinner animations sourced from `unicode-animations` and `rattles` (braille grids, ASCII spinners, arrows, emoji)
+- 13 swappable ASCII art banner styles
+- All settings persist to `.osaint-config.json`
 
 ## Privacy Notes
 
