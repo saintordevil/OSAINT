@@ -24,6 +24,7 @@ const flags = {
     setBanner:  args.find(a => a.startsWith('--set-banner='))?.split('=')[1],
     setLoading: args.find(a => a.startsWith('--set-loading='))?.split('=')[1],
     setIdle:    args.find(a => a.startsWith('--set-idle='))?.split('=')[1],
+    animDemo:   args.find(a => a.startsWith('--anim-demo='))?.split('=')[1],
 };
 const url = args.find(a => !a.startsWith('-'));
 
@@ -83,6 +84,18 @@ async function main() {
         setIdleAnimation(num);
         const names = getAnimationNames();
         console.log(`\n   ${C}>>>${RST} ${W}Idle animation set to ${num}: ${names[num - 1]}${RST}\n`);
+        return;
+    }
+
+    if (flags.animDemo) {
+        const { demoAnimation, getAnimationCount } = await import('./src/animations.js');
+        const count = getAnimationCount();
+        const num = parseInt(flags.animDemo);
+        if (isNaN(num) || num < 1 || num > count) {
+            console.log(`\n   ${R}Invalid animation.${RST} Pick 1-${count}. Run ${W}--animations${RST} to see all.\n`);
+            return;
+        }
+        await demoAnimation(num);
         return;
     }
 

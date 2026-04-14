@@ -1,5 +1,6 @@
 import spinners from 'unicode-animations';
-import { C, W, DG, DIM, BY, G, RST } from './colors.js';
+import { C, W, DG, DIM, BY, G, RST, CLR, HIDE, SHOW, visLen } from './colors.js';
+import { line, row, empty } from './banner.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -45,11 +46,6 @@ function buildRegistry() {
         all.push({ key, name: fmtName(key), category: uGrid, ...spinners[key] });
     }
 
-    // ── Rattles — Arrows ─────────────────────────────────────────────────
-    const rArrows = 'Rattles \u00b7 Arrows';
-    all.push({ key: 'arrow',        name: 'Arrow',        category: rArrows, frames: ['\u2190','\u2196','\u2191','\u2197','\u2192','\u2198','\u2193','\u2199'], interval: 100 });
-    all.push({ key: 'double_arrow', name: 'Double Arrow',  category: rArrows, frames: ['\u21d0','\u21d6','\u21d1','\u21d7','\u21d2','\u21d8','\u21d3','\u21d9'], interval: 100 });
-
     // ── Rattles — ASCII ──────────────────────────────────────────────────
     const rAscii = 'Rattles \u00b7 ASCII';
     all.push({ key: 'arc',              name: 'Arc',              category: rAscii, frames: ['\u25dc','\u25e0','\u25dd','\u25de','\u25e1','\u25df'], interval: 100 });
@@ -89,15 +85,6 @@ function buildRegistry() {
     all.push({ key: 'sand', name: 'Sand', category: rBraille, frames: ['\u2801','\u2802','\u2804','\u2840','\u2848','\u2850','\u2860','\u28c0','\u28c1','\u28c2','\u28c4','\u28cc','\u28d4','\u28e4','\u28e5','\u28e6','\u28ee','\u28f6','\u28f7','\u28ff','\u287f','\u283f','\u289f','\u281f','\u285b','\u288b','\u280b','\u280d','\u2849','\u2809','\u2811','\u2821','\u2881'], interval: 80 });
     all.push({ key: 'wave', name: 'Wave', category: rBraille, frames: ['\u2801\u2802\u2804\u2840','\u2802\u2804\u2840\u2880','\u2804\u2840\u2880\u2820','\u2840\u2880\u2820\u2810','\u2880\u2820\u2810\u2808','\u2820\u2810\u2808\u2801','\u2810\u2808\u2801\u2802','\u2808\u2801\u2802\u2804'], interval: 100 });
     all.push({ key: 'bounce', name: 'Bounce', category: rBraille, frames: ['\u2801','\u2802','\u2804','\u2840','\u2880','\u2820','\u2810','\u2808'], interval: 100 });
-
-    // ── Rattles — Emoji ──────────────────────────────────────────────────
-    const rEmoji = 'Rattles \u00b7 Emoji';
-    all.push({ key: 'clock',   name: 'Clock',   category: rEmoji, frames: ['\ud83d\udd50','\ud83d\udd51','\ud83d\udd52','\ud83d\udd53','\ud83d\udd54','\ud83d\udd55','\ud83d\udd56','\ud83d\udd57','\ud83d\udd58','\ud83d\udd59','\ud83d\udd5a','\ud83d\udd5b'], interval: 100 });
-    all.push({ key: 'earth',   name: 'Earth',   category: rEmoji, frames: ['\ud83c\udf0d','\ud83c\udf0e','\ud83c\udf0f'], interval: 180 });
-    all.push({ key: 'moon',    name: 'Moon',    category: rEmoji, frames: ['\ud83c\udf11','\ud83c\udf12','\ud83c\udf13','\ud83c\udf14','\ud83c\udf15','\ud83c\udf16','\ud83c\udf17','\ud83c\udf18'], interval: 150 });
-    all.push({ key: 'hearts',  name: 'Hearts',  category: rEmoji, frames: ['\ud83d\udc9b','\ud83d\udc99','\ud83d\udc9c','\ud83d\udc9a','\u2764\ufe0f'], interval: 120 });
-    all.push({ key: 'speaker', name: 'Speaker', category: rEmoji, frames: ['\ud83d\udd08','\ud83d\udd09','\ud83d\udd0a','\ud83d\udd09'], interval: 160 });
-    all.push({ key: 'weather', name: 'Weather', category: rEmoji, frames: ['\u2600\ufe0f','\ud83c\udf24','\u26c5\ufe0f','\ud83c\udf25','\u2601\ufe0f','\ud83c\udf27','\ud83c\udf28','\u26c8'], interval: 100 });
 
     return all;
 }
@@ -173,8 +160,10 @@ export function showAnimationPreviews() {
     let lastCategory = '';
 
     console.log('');
-    console.log(`   ${W}Animation Styles${RST}`);
-    console.log(`   ${DG}${'─'.repeat(55)}${RST}`);
+    console.log(line('='));
+    console.log(empty());
+    console.log(row(`${DG}>>${RST} ${W}Animation Styles${RST}`));
+    console.log(empty());
 
     for (let i = 0; i < reg.length; i++) {
         const a = reg[i];
@@ -182,19 +171,12 @@ export function showAnimationPreviews() {
 
         // Category header
         if (a.category !== lastCategory) {
+            if (lastCategory !== '') console.log(empty());
             lastCategory = a.category;
-            console.log('');
-            console.log(`   ${C}>>${RST} ${W}${a.category}${RST}`);
-            console.log('');
+            console.log(line('-'));
+            console.log(row(`${DG}>>${RST} ${W}${a.category}${RST}`));
+            console.log(line('-'));
         }
-
-        // Sample frames (show up to 4)
-        const sampleCount = Math.min(4, a.frames.length);
-        const samples = [];
-        for (let f = 0; f < sampleCount; f++) {
-            samples.push(a.frames[f]);
-        }
-        const sampleStr = samples.join('  ');
 
         // Active markers
         let marker = '';
@@ -206,16 +188,61 @@ export function showAnimationPreviews() {
             marker = `  ${G}[idle]${RST}`;
         }
 
-        // Number + name + sample + marker
-        const numStr = String(num).padStart(3);
-        const nameStr = a.name.padEnd(18);
-        console.log(`   ${C}${numStr}${RST}  ${W}${nameStr}${RST} ${DIM}${sampleStr}${RST}${marker}`);
+        // Sample frames — fit within remaining box width
+        // Layout: 2 + 3(num) + 2 + 18(name) + 1 = 26 chars before frames
+        const markerLen = marker ? visLen(marker) : 0;
+        const maxSampleW = 61 - 26 - markerLen - 1;
+        let samples = '';
+        for (let f = 0; f < Math.min(8, a.frames.length); f++) {
+            const next = samples ? samples + ' ' + a.frames[f] : a.frames[f];
+            if (visLen(next) > maxSampleW) break;
+            samples = next;
+        }
+
+        const numStr = `${C}${String(num).padStart(3)}${RST}`;
+        const nameStr = `${W}${a.name.padEnd(18)}${RST}`;
+        console.log(row(`  ${numStr}  ${nameStr} ${DIM}${samples}${RST}${marker}`));
     }
 
+    console.log(empty());
+    console.log(line('='));
+    console.log(empty());
+    console.log(row(`${DG}Set loading:${RST}  ${W}node osaint.js --set-loading=<number>${RST}`));
+    console.log(row(`${DG}Set idle:${RST}     ${W}node osaint.js --set-idle=<number>${RST}`));
+    console.log(row(`${DG}Live demo:${RST}    ${W}node osaint.js --anim-demo=<number>${RST}`));
+    console.log(empty());
+    console.log(line('='));
     console.log('');
-    console.log(`   ${DG}${'─'.repeat(55)}${RST}`);
-    console.log('');
-    console.log(`   ${DG}Set loading:  ${W}node osaint.js --set-loading=<number>${RST}`);
-    console.log(`   ${DG}Set idle:     ${W}node osaint.js --set-idle=<number>${RST}`);
-    console.log('');
+}
+
+// ─── LIVE DEMO ──────────────────────────────────────────────────────────────
+
+export function demoAnimation(num) {
+    const reg = getRegistry();
+    if (num < 1 || num > reg.length) return Promise.resolve(false);
+    const anim = reg[num - 1];
+
+    return new Promise((resolve) => {
+        process.stdout.write(HIDE);
+        console.log('');
+        console.log(line('-'));
+        console.log(row(`${DG}>>${RST} ${W}Live Demo: ${C}${anim.name}${RST}  ${DG}(${anim.category})${RST}`));
+        console.log(row(`${DG}Interval: ${W}${anim.interval}ms${RST}  ${DG}Frames: ${W}${anim.frames.length}${RST}`));
+        console.log(line('-'));
+        console.log('');
+
+        let fi = 0;
+        const timer = setInterval(() => {
+            const frame = anim.frames[fi % anim.frames.length];
+            process.stdout.write(`\r   ${C}${frame}${RST}  ${DIM}${W}${anim.name}${RST}    `);
+            fi++;
+        }, anim.interval);
+
+        setTimeout(() => {
+            clearInterval(timer);
+            process.stdout.write(`\r${CLR}${SHOW}`);
+            console.log('');
+            resolve(true);
+        }, 4000);
+    });
 }

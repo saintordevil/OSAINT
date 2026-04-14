@@ -69,7 +69,8 @@ node osaint.js --banner          # Preview all 13 banner styles
 node osaint.js --set-banner=N    # Set banner to style N
 
 # Animation customization
-node osaint.js --animations      # Preview all 60 animation styles
+node osaint.js --animations      # Preview all 52 animation styles
+node osaint.js --anim-demo=N     # Live demo of a specific animation
 node osaint.js --set-loading=N   # Set the active/scanning animation
 node osaint.js --set-idle=N      # Set the completed/idle animation
 ```
@@ -96,7 +97,7 @@ Each platform handles share links differently:
 
 - Uses `node-tls-client` for Chrome TLS fingerprint impersonation to bypass CloudFlare and bot detection
 - Mobile Android User-Agent for TikTok (required -- TikTok only serves sharer data to mobile browsers)
-- 60 customizable spinner animations sourced from `unicode-animations` and `rattles` (braille grids, ASCII spinners, arrows, emoji)
+- 52 customizable spinner animations sourced from `unicode-animations` and `rattles` (braille grids, ASCII spinners, braille patterns)
 - 13 swappable ASCII art banner styles
 - All settings persist to `.osaint-config.json`
 
