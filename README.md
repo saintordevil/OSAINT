@@ -13,6 +13,8 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 | **Xiaohongshu** | Sharer user ID / share identity token | `appuid` / `shareRedId` parameters in app share URLs |
 | **Bilibili** | Sharer user ID / profile URL | `mid` / `share_mid` parameters in app share URLs |
 | **Baidu Pan** | Sharer user ID / profile URL | `uk` parameter in old Netdisk share URLs |
+| **NetEase Music** | Sharer user ID, name, avatar | `userid` parameter and public user API |
+| **Zhihu** | Legacy sharer profile slug | decoded `utm_member` parameter |
 | **Discord** | Username, user ID, avatar, account creation date | Public invite API |
 | **Claude** | Display name, user UUID | Chat snapshots API |
 | **Perplexity** | Username, avatar, user ID | Thread REST API |
@@ -49,6 +51,8 @@ node osaint.js "https://www.instagram.com/reel/abc/?igsh=xyz"
 node osaint.js "https://www.xiaohongshu.com/explore/abc?appuid=xyz"
 node osaint.js "https://www.bilibili.com/video/BV...?mid=123456"
 node osaint.js "https://pan.baidu.com/share/link?shareid=123&uk=456"
+node osaint.js "https://music.163.com/song/123/?userid=456"
+node osaint.js "https://www.zhihu.com/question/123?utm_member=..."
 node osaint.js "https://discord.gg/invite123"
 
 # JSON output (for scripting)
@@ -94,6 +98,10 @@ Each platform handles share links differently:
 - **Bilibili** -- Some app share URLs include `mid` or `share_mid`, which is the sharing account's numeric MID. OSAINT extracts it offline and builds the public `space.bilibili.com/{mid}` profile URL. It ignores `up_id` because that is usually the uploader/content owner.
 
 - **Baidu Pan** -- Old Baidu Netdisk share URLs expose `uk`, the sharing account's public user key. OSAINT extracts it offline and builds the public `pan.baidu.com/share/home?uk=...` share-home URL.
+
+- **NetEase Cloud Music** -- Share URLs can include `userid`, which maps to the sharing account. OSAINT resolves it through NetEase's public user-detail endpoint when available and keeps `creatorId` separate as content creator metadata.
+
+- **Zhihu** -- Legacy app shares can include `utm_member`, which is a base64-encoded 32-character profile slug. OSAINT only accepts values that decode cleanly to that strict profile ID shape.
 
 - **Discord** -- Invite codes are resolved via Discord's public API (`/api/v9/invites/{code}`), which returns the inviter's username, ID, avatar, and account creation date (decoded from the snowflake ID).
 

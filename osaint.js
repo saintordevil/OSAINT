@@ -238,6 +238,8 @@ async function selfTest() {
             ['https://www.xiaohongshu.com/explore/abc123?appuid=671e6b46000000001d021e13', 'xiaohongshu'],
             ['https://www.bilibili.com/video/BV1xx411c7mD/?mid=123456', 'bilibili'],
             ['https://pan.baidu.com/share/link?shareid=123&uk=456', 'baidu'],
+            ['https://music.163.com/song/27971936/?userid=132726004', 'netease'],
+            ['https://www.zhihu.com/question/123?utm_member=YzA1N2VkNTNiYTMyMmMwZDdiODYxYmI0NDRiOWZlYTY%3D', 'zhihu'],
             ['https://discord.gg/abc123',                'discord'],
             ['https://claude.ai/share/abcd-1234-efgh',   'claude'],
             ['https://www.perplexity.ai/search/query',   'perplexity'],
@@ -268,8 +270,8 @@ async function selfTest() {
         if (loaded !== platforms.length) throw new Error(`${loaded}/${platforms.length} loaded`);
     }, { doneMsg: `Modules: all ${platformCount} loaded` });
 
-    // Test 3: Offline parsers
-    await runStep('Testing offline parsers', async () => {
+    // Test 3: Strict parsers
+    await runStep('Testing strict parsers', async () => {
         const tg = await loadParser('telegram');
         const tgR = await tg('https://t.me/joinchat/AQAAAA');
         if (!tgR.data && !tgR.error) throw new Error('Telegram decoder failed');
@@ -297,7 +299,19 @@ async function selfTest() {
         if (!baiduHome.error) throw new Error('Baidu strict negative failed');
         const baiduLookalike = await baidu('https://evilpan.baidu.com/share/link?shareid=123&uk=456');
         if (!baiduLookalike.error) throw new Error('Baidu host negative failed');
-    }, { doneMsg: 'Offline parsers: Telegram + Microsoft + Xiaohongshu + Bilibili + Baidu OK' });
+
+        const netease = await loadParser('netease');
+        const neteaseR = await netease('https://music.163.com/song/27971936/?userid=132726004');
+        if (neteaseR.data?.user_id !== '132726004') throw new Error('NetEase parser failed');
+        const neteaseNoUser = await netease('https://music.163.com/song/27971936/?id=27971936');
+        if (!neteaseNoUser.error) throw new Error('NetEase strict negative failed');
+
+        const zhihu = await loadParser('zhihu');
+        const zhihuR = await zhihu('https://www.zhihu.com/question/123?utm_member=YzA1N2VkNTNiYTMyMmMwZDdiODYxYmI0NDRiOWZlYTY%3D');
+        if (zhihuR.data?.user_id !== 'c057ed53ba322c0d7b861bb444b9fea6') throw new Error('Zhihu parser failed');
+        const zhihuBad = await zhihu('https://www.zhihu.com/question/123?utm_member=bad');
+        if (!zhihuBad.error) throw new Error('Zhihu strict negative failed');
+    }, { doneMsg: 'Strict parsers: Telegram + Microsoft + Xiaohongshu + Bilibili + Baidu + NetEase + Zhihu OK' });
 
     // Let all completed lines rain together
     s.idle('');

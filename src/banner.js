@@ -12,6 +12,7 @@ const BOX_W = 63;
 const DISPLAY_NAMES = {
     tiktok: 'TikTok', instagram: 'Instagram', discord: 'Discord',
     xiaohongshu: 'Xiaohongshu', bilibili: 'Bilibili', baidu: 'Baidu Pan',
+    netease: 'NetEase Music', zhihu: 'Zhihu',
     claude: 'Claude', perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
     substack: 'Substack', suno: 'Suno', telegram: 'Telegram',
     twitch: 'Twitch', reddit: 'Reddit',
@@ -378,6 +379,20 @@ export function printHowTo() {
         row(`   ${DIM}${W}Returns: ${C}user ID, profile URL, share ID${RST}  ${DG}(offline)${RST}`),
         row(`   ${DG}Ex: ${DIM}${C}pan.baidu.com/share/link?shareid=1&uk=2${RST}`),
         mid,
+        row(`${DG}>>${RST} ${W}NetEase Music${RST}  ${DG}>> sharer userid${RST}`),
+        mid,
+        row(`   ${DIM}${W}Share from NetEase Cloud Music.${RST}`),
+        row(`   ${DIM}${W}The ${C}userid${DIM}${W} param maps to the sharer's profile.${RST}`),
+        row(`   ${DIM}${W}Returns: ${C}user ID, name, avatar${RST}`),
+        row(`   ${DG}Ex: ${DIM}${C}music.163.com/song/123/?userid=456${RST}`),
+        mid,
+        row(`${DG}>>${RST} ${W}Zhihu${RST}  ${DG}>> legacy utm_member${RST}`),
+        mid,
+        row(`   ${DIM}${W}Some old app shares encoded a member slug.${RST}`),
+        row(`   ${DIM}${W}OSAINT decodes only valid 32-char profile IDs.${RST}`),
+        row(`   ${DIM}${W}Returns: ${C}user ID, profile URL${RST}  ${DG}(offline)${RST}`),
+        row(`   ${DG}Ex: ${DIM}${C}zhihu.com/question/1?utm_member=...${RST}`),
+        mid,
         row(`${DG}>>${RST} ${W}Also Supported${RST}`),
         mid,
         row(`   ${DG}>>${RST} ${W}Perplexity${RST}  ${DG}Thread author from search URL${RST}`),
@@ -423,6 +438,8 @@ const LABELS = {
     subreddit: 'Subreddit', profile_sharing: 'Profile Sharing',
     share_red_id: 'Share Red ID', author_share: 'Author Share',
     share_id: 'Share ID', device_id: 'Device ID', file_id: 'File ID',
+    content_id: 'Content ID', content_creator_id: 'Content Creator',
+    listened_songs: 'Listened Songs',
 };
 
 function fmtLabel(key) {
