@@ -9,7 +9,9 @@
   "type": "module",
   "scripts": {
     "start": "node osaint.js",
-    "test": "node osaint.js --test"
+    "test": "node osaint.js --test && node --test test/research-share-leaks.test.js",
+    "test:research": "node --test test/research-share-leaks.test.js",
+    "research:share": "node scripts/research-share-leaks.js"
   },
   "keywords": [
     "osint",

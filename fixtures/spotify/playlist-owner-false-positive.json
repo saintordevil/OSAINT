@@ -1,0 +1,23 @@
+{
+  "platform": "spotify",
+  "input_url": "https://open.spotify.com/playlist/5EainjSN9gBbm2L7YzlUsR?go=1&sp_cid=5b2987d8f6445a4e836ee3cb02abd98c&utm_source=embed_player_p&utm_medium=desktop&nd=1&dlsi=058d65493af24ff7",
+  "expected_result": "no_strict_sharer_found",
+  "note": "Tori is the playlist owner, not the actual sharer.",
+  "candidates": [
+    {
+      "field_path": "$.playlist.owner.displayName",
+      "value": "Tori",
+      "expected_class": "content_owner"
+    },
+    {
+      "field_path": "$.playlist.owner.uri",
+      "value": "spotify:user:31hhxumjd2quhagrhnoloordokly",
+      "expected_class": "content_owner"
+    },
+    {
+      "field_path": "$.tracks.items[0].added_by.id",
+      "value": "spotify-user-who-added-track",
+      "expected_class": "content_owner"
+    }
+  ]
+}

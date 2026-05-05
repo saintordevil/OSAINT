@@ -1,0 +1,27 @@
+{
+  "platform": "youtube",
+  "input_url": "https://youtu.be/9_pGtoazuSc?si=23gLArT_zXKhlYBh",
+  "expected_result": "no_strict_sharer_found",
+  "candidates": [
+    {
+      "field_path": "$.videoDetails.author",
+      "value": "Westham 2",
+      "expected_class": "content_owner"
+    },
+    {
+      "field_path": "$.videoDetails.channelId",
+      "value": "UC8eNi_IjG_usWbVCrgKeGYg",
+      "expected_class": "content_owner"
+    },
+    {
+      "field_path": "$.oembed.author_name",
+      "value": "Westham 2",
+      "expected_class": "content_owner"
+    },
+    {
+      "field_path": "$.actions.sharePanel.shortUrl",
+      "value": "https://youtu.be/9_pGtoazuSc?si=freshGeneratedToken",
+      "expected_class": "generated_share"
+    }
+  ]
+}
