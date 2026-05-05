@@ -11,6 +11,8 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 | **TikTok** | Username, name, avatar, followers, private status | `shareUser` data from mobile page render |
 | **Instagram** | Username, user ID, name, avatar | `igsh` parameter / embedded page JSON |
 | **Xiaohongshu** | Sharer user ID / share identity token | `appuid` / `shareRedId` parameters in app share URLs |
+| **Bilibili** | Sharer user ID / profile URL | `mid` / `share_mid` parameters in app share URLs |
+| **Baidu Pan** | Sharer user ID / profile URL | `uk` parameter in old Netdisk share URLs |
 | **Discord** | Username, user ID, avatar, account creation date | Public invite API |
 | **Claude** | Display name, user UUID | Chat snapshots API |
 | **Perplexity** | Username, avatar, user ID | Thread REST API |
@@ -45,6 +47,8 @@ Always wrap URLs in quotes (required in PowerShell due to `&` characters).
 node osaint.js "https://vm.tiktok.com/abc123/"
 node osaint.js "https://www.instagram.com/reel/abc/?igsh=xyz"
 node osaint.js "https://www.xiaohongshu.com/explore/abc?appuid=xyz"
+node osaint.js "https://www.bilibili.com/video/BV...?mid=123456"
+node osaint.js "https://pan.baidu.com/share/link?shareid=123&uk=456"
 node osaint.js "https://discord.gg/invite123"
 
 # JSON output (for scripting)
@@ -86,6 +90,10 @@ Each platform handles share links differently:
 - **Instagram** -- The `igsh` parameter in share URLs is a tracking ID tied to the sharer's account. Instagram embeds the sharer's profile in the page response via `xdt_get_relationship_for_shid_logged_out`. Availability varies per share and is controlled server-side.
 
 - **Xiaohongshu / RED** -- App share URLs can include `appuid` or `shareRedId` parameters tied to the sharing account. OSAINT extracts the direct user ID when present and records hidden-sharing/share-method metadata from the same URL.
+
+- **Bilibili** -- Some app share URLs include `mid` or `share_mid`, which is the sharing account's numeric MID. OSAINT extracts it offline and builds the public `space.bilibili.com/{mid}` profile URL. It ignores `up_id` because that is usually the uploader/content owner.
+
+- **Baidu Pan** -- Old Baidu Netdisk share URLs expose `uk`, the sharing account's public user key. OSAINT extracts it offline and builds the public `pan.baidu.com/share/home?uk=...` share-home URL.
 
 - **Discord** -- Invite codes are resolved via Discord's public API (`/api/v9/invites/{code}`), which returns the inviter's username, ID, avatar, and account creation date (decoded from the snowflake ID).
 

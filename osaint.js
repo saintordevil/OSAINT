@@ -236,6 +236,8 @@ async function selfTest() {
             ['https://vm.tiktok.com/abc123/',            'tiktok'],
             ['https://www.instagram.com/reel/abc123/',   'instagram'],
             ['https://www.xiaohongshu.com/explore/abc123?appuid=671e6b46000000001d021e13', 'xiaohongshu'],
+            ['https://www.bilibili.com/video/BV1xx411c7mD/?mid=123456', 'bilibili'],
+            ['https://pan.baidu.com/share/link?shareid=123&uk=456', 'baidu'],
             ['https://discord.gg/abc123',                'discord'],
             ['https://claude.ai/share/abcd-1234-efgh',   'claude'],
             ['https://www.perplexity.ai/search/query',   'perplexity'],
@@ -279,7 +281,23 @@ async function selfTest() {
         const xhs = await loadParser('xiaohongshu');
         const xhsR = await xhs('https://www.xiaohongshu.com/explore/abc123?appuid=671e6b46000000001d021e13&share_from_user_hidden=true&xhsshare=CopyLink');
         if (xhsR.data?.user_id !== '671e6b46000000001d021e13') throw new Error('Xiaohongshu parser failed');
-    }, { doneMsg: 'Offline parsers: Telegram + Microsoft + Xiaohongshu OK' });
+
+        const bili = await loadParser('bilibili');
+        const biliR = await bili('https://www.bilibili.com/video/BV1xx411c7mD/?mid=123456&share_session_id=abc');
+        if (biliR.data?.user_id !== '123456') throw new Error('Bilibili parser failed');
+        const biliProfile = await bili('https://space.bilibili.com/999?mid=123456');
+        if (!biliProfile.error) throw new Error('Bilibili strict negative failed');
+        const biliLookalike = await bili('https://www.notbilibili.com/video/BV1xx411c7mD/?mid=123456');
+        if (!biliLookalike.error) throw new Error('Bilibili host negative failed');
+
+        const baidu = await loadParser('baidu');
+        const baiduR = await baidu('https://pan.baidu.com/share/link?shareid=123&uk=456');
+        if (baiduR.data?.user_id !== '456') throw new Error('Baidu parser failed');
+        const baiduHome = await baidu('https://pan.baidu.com/share/home?uk=456');
+        if (!baiduHome.error) throw new Error('Baidu strict negative failed');
+        const baiduLookalike = await baidu('https://evilpan.baidu.com/share/link?shareid=123&uk=456');
+        if (!baiduLookalike.error) throw new Error('Baidu host negative failed');
+    }, { doneMsg: 'Offline parsers: Telegram + Microsoft + Xiaohongshu + Bilibili + Baidu OK' });
 
     // Let all completed lines rain together
     s.idle('');

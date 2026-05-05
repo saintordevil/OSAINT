@@ -11,7 +11,7 @@ const BOX_W = 63;
 
 const DISPLAY_NAMES = {
     tiktok: 'TikTok', instagram: 'Instagram', discord: 'Discord',
-    xiaohongshu: 'Xiaohongshu',
+    xiaohongshu: 'Xiaohongshu', bilibili: 'Bilibili', baidu: 'Baidu Pan',
     claude: 'Claude', perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
     substack: 'Substack', suno: 'Suno', telegram: 'Telegram',
     twitch: 'Twitch', reddit: 'Reddit',
@@ -364,6 +364,20 @@ export function printHowTo() {
         row(`   ${DIM}${W}Returns: ${C}creator user ID${RST}  ${DG}(no HTTP needed)${RST}`),
         row(`   ${DG}Ex: ${DIM}${C}t.me/joinchat/BgFGOkI4OTk${RST}`),
         mid,
+        row(`${DG}>>${RST} ${W}Bilibili${RST}  ${DG}>> sharer MID in app URL${RST}`),
+        mid,
+        row(`   ${DIM}${W}Share from the Bilibili app.${RST}`),
+        row(`   ${DIM}${W}Some app URLs include the sharer's ${C}mid${DIM}${W}.${RST}`),
+        row(`   ${DIM}${W}Returns: ${C}user ID, profile URL${RST}  ${DG}(offline)${RST}`),
+        row(`   ${DG}Ex: ${DIM}${C}bilibili.com/video/BV...?mid=123${RST}`),
+        mid,
+        row(`${DG}>>${RST} ${W}Baidu Pan${RST}  ${DG}>> sharer UK in old links${RST}`),
+        mid,
+        row(`   ${DIM}${W}Old Netdisk share links include ${C}uk${DIM}${W}.${RST}`),
+        row(`   ${DIM}${W}That UK maps to the sharer's public share home.${RST}`),
+        row(`   ${DIM}${W}Returns: ${C}user ID, profile URL, share ID${RST}  ${DG}(offline)${RST}`),
+        row(`   ${DG}Ex: ${DIM}${C}pan.baidu.com/share/link?shareid=1&uk=2${RST}`),
+        mid,
         row(`${DG}>>${RST} ${W}Also Supported${RST}`),
         mid,
         row(`   ${DG}>>${RST} ${W}Perplexity${RST}  ${DG}Thread author from search URL${RST}`),
@@ -408,6 +422,7 @@ const LABELS = {
     clip_id: 'Clip ID', channel: 'Channel', share_method: 'Share Method',
     subreddit: 'Subreddit', profile_sharing: 'Profile Sharing',
     share_red_id: 'Share Red ID', author_share: 'Author Share',
+    share_id: 'Share ID', device_id: 'Device ID', file_id: 'File ID',
 };
 
 function fmtLabel(key) {
