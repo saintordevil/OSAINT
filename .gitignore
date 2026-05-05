@@ -1,6 +1,5 @@
 node_modules/
 .osaint-config.json
 *.log
-research-runs/
 .DS_Store
 Thumbs.db
