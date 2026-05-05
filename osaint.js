@@ -198,9 +198,6 @@ async function main() {
 
     // Step 3: Process
     if (result.error) {
-        s.fail('Analysis returned an error');
-        // Let rain animate on the completed lines for a moment
-        await new Promise(r => setTimeout(r, 1500));
         s.stop();
         console.log('');
         outputError(result.error);
