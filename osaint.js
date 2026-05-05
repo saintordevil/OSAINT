@@ -35,6 +35,19 @@ function cleanup() {
     s.stop();
     process.stdout.write(SHOW);
 }
+
+function printJson(payload) {
+    console.log(JSON.stringify(payload, null, 2));
+}
+
+function outputError(message) {
+    if (flags.json) {
+        printJson({ error: message });
+    } else {
+        printError(message);
+    }
+}
+
 process.on('SIGINT', () => { cleanup(); process.exit(0); });
 process.on('uncaughtException', (err) => { cleanup(); printError(err.message); process.exit(1); });
 
@@ -141,8 +154,8 @@ async function main() {
     }
 
     if (!url) {
-        if (!flags.quiet) printBanner();
-        printError('No URL provided. Use --help for usage.');
+        if (!flags.quiet && !flags.json) printBanner();
+        outputError('No URL provided. Use --help for usage.');
         return;
     }
 
@@ -153,14 +166,19 @@ async function main() {
     // Detect platform first (quick, no spinner needed)
     const platform = detectPlatform(url);
     if (!platform) {
-        printError('Unsupported URL. Use --list to see supported platforms.');
+        outputError('Unsupported URL. Use --list to see supported platforms.');
+        return;
+    }
+
+    if (flags.json) {
+        const parser = await loadParser(platform.name);
+        const result = await parser(url);
+        printJson(result.error ? { error: result.error } : result.data);
         return;
     }
 
     // Show target info before spinner starts
-    if (!flags.json) {
-        printTargetBox(platform.name, url);
-    }
+    printTargetBox(platform.name, url);
 
     // Start spinner - all steps animate together from here
     s.reset();
@@ -180,12 +198,12 @@ async function main() {
 
     // Step 3: Process
     if (result.error) {
-        s.fail('Analysis returned an error', result.error);
+        s.fail('Analysis returned an error');
         // Let rain animate on the completed lines for a moment
         await new Promise(r => setTimeout(r, 1500));
         s.stop();
         console.log('');
-        printError(result.error);
+        outputError(result.error);
         return;
     }
 
@@ -200,11 +218,7 @@ async function main() {
     console.log('');
 
     // Output
-    if (flags.json) {
-        console.log(JSON.stringify(result.data, null, 2));
-    } else {
-        printResults(result.data, platform.name);
-    }
+    printResults(result.data, platform.name);
 }
 
 // ─── SELF TEST ───────────────────────────────────────────────────────────────
@@ -221,6 +235,7 @@ async function selfTest() {
         const tests = [
             ['https://vm.tiktok.com/abc123/',            'tiktok'],
             ['https://www.instagram.com/reel/abc123/',   'instagram'],
+            ['https://www.xiaohongshu.com/explore/abc123?appuid=671e6b46000000001d021e13', 'xiaohongshu'],
             ['https://discord.gg/abc123',                'discord'],
             ['https://claude.ai/share/abcd-1234-efgh',   'claude'],
             ['https://www.perplexity.ai/search/query',   'perplexity'],
@@ -260,7 +275,11 @@ async function selfTest() {
         const ms = await loadParser('microsoft');
         const msR = await ms('https://x-my.sharepoint.com/:f:/g/personal/john_doe_contoso_com/abc');
         if (msR.data?.email !== 'john.doe@contoso.com') throw new Error('Microsoft parser failed');
-    }, { doneMsg: 'Offline parsers: Telegram + Microsoft OK' });
+
+        const xhs = await loadParser('xiaohongshu');
+        const xhsR = await xhs('https://www.xiaohongshu.com/explore/abc123?appuid=671e6b46000000001d021e13&share_from_user_hidden=true&xhsshare=CopyLink');
+        if (xhsR.data?.user_id !== '671e6b46000000001d021e13') throw new Error('Xiaohongshu parser failed');
+    }, { doneMsg: 'Offline parsers: Telegram + Microsoft + Xiaohongshu OK' });
 
     // Let all completed lines rain together
     s.idle('');
@@ -276,6 +295,6 @@ async function selfTest() {
 
 main().catch(err => {
     cleanup();
-    printError(err.message);
+    outputError(err.message);
     process.exit(1);
 });

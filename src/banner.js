@@ -11,6 +11,7 @@ const BOX_W = 63;
 
 const DISPLAY_NAMES = {
     tiktok: 'TikTok', instagram: 'Instagram', discord: 'Discord',
+    xiaohongshu: 'Xiaohongshu',
     claude: 'Claude', perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
     substack: 'Substack', suno: 'Suno', telegram: 'Telegram',
     twitch: 'Twitch', reddit: 'Reddit',
@@ -369,6 +370,7 @@ export function printHowTo() {
         row(`   ${DG}>>${RST} ${W}Pinterest${RST}   ${DG}Sender from pin.it invite code${RST}`),
         row(`   ${DG}>>${RST} ${W}Substack${RST}    ${DG}Referring user from ?r= param${RST}`),
         row(`   ${DG}>>${RST} ${W}Suno${RST}        ${DG}Sharer handle from share code${RST}`),
+        row(`   ${DG}>>${RST} ${W}Xiaohongshu${RST} ${DG}Sharer ID from app share params${RST}`),
         row(`   ${DG}>>${RST} ${W}Reddit${RST}      ${DG}Sharer from /r/<sub>/s/<id> link${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Customization${RST}`),
@@ -405,6 +407,7 @@ const LABELS = {
     post_id: 'Post ID', resolved_url: 'Resolved URL',
     clip_id: 'Clip ID', channel: 'Channel', share_method: 'Share Method',
     subreddit: 'Subreddit', profile_sharing: 'Profile Sharing',
+    share_red_id: 'Share Red ID', author_share: 'Author Share',
 };
 
 function fmtLabel(key) {

@@ -10,6 +10,7 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 |---|---|---|
 | **TikTok** | Username, name, avatar, followers, private status | `shareUser` data from mobile page render |
 | **Instagram** | Username, user ID, name, avatar | `igsh` parameter / embedded page JSON |
+| **Xiaohongshu** | Sharer user ID / share identity token | `appuid` / `shareRedId` parameters in app share URLs |
 | **Discord** | Username, user ID, avatar, account creation date | Public invite API |
 | **Claude** | Display name, user UUID | Chat snapshots API |
 | **Perplexity** | Username, avatar, user ID | Thread REST API |
@@ -43,6 +44,7 @@ Always wrap URLs in quotes (required in PowerShell due to `&` characters).
 # Analyze a share link
 node osaint.js "https://vm.tiktok.com/abc123/"
 node osaint.js "https://www.instagram.com/reel/abc/?igsh=xyz"
+node osaint.js "https://www.xiaohongshu.com/explore/abc?appuid=xyz"
 node osaint.js "https://discord.gg/invite123"
 
 # JSON output (for scripting)
@@ -82,6 +84,8 @@ Each platform handles share links differently:
 - **TikTok** -- Short links (`vm.tiktok.com`) redirect through TikTok's servers. When fetched with a mobile User-Agent, TikTok embeds the sharer's full profile in the page HTML under `webapp.reflow.global.shareUser`. Only works if the sharer has "Display profile when sharing links" enabled in their privacy settings.
 
 - **Instagram** -- The `igsh` parameter in share URLs is a tracking ID tied to the sharer's account. Instagram embeds the sharer's profile in the page response via `xdt_get_relationship_for_shid_logged_out`. Availability varies per share and is controlled server-side.
+
+- **Xiaohongshu / RED** -- App share URLs can include `appuid` or `shareRedId` parameters tied to the sharing account. OSAINT extracts the direct user ID when present and records hidden-sharing/share-method metadata from the same URL.
 
 - **Discord** -- Invite codes are resolved via Discord's public API (`/api/v9/invites/{code}`), which returns the inviter's username, ID, avatar, and account creation date (decoded from the snowflake ID).
 
