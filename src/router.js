@@ -13,6 +13,7 @@ const PLATFORMS = [
     { name: 'pinterest',  pattern: /pin\.it\//i,                                                desc: 'Pinterest share links' },
     { name: 'substack',   pattern: /substack\.com\/@[\w-]+\/note\//i,                            desc: 'Substack referral links' },
     { name: 'suno',       pattern: /suno\.com\/s\//i,                                            desc: 'Suno music share links' },
+    { name: 'spotify',    pattern: /(?:^|\/\/)(?:(?:www\.)?spotify\.com\/wrapped-share\/|open\.spotify\.com\/wrapped\/share\/)/i, desc: 'Spotify Wrapped share links' },
     { name: 'telegram',   pattern: /t\.me\/joinchat\//i,                                         desc: 'Telegram join links' },
     { name: 'twitch',    pattern: /(?:clips\.twitch\.tv\/|twitch\.tv\/\w+\/clip\/)/i,               desc: 'Twitch clips (reveals clipper)' },
     { name: 'reddit',    pattern: /reddit\.com\/r\/\w+\/s\//i,                                      desc: 'Reddit mobile share links' },
