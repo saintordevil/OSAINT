@@ -244,6 +244,7 @@ async function selfTest() {
             ['https://pin.it/abc123',                    'pinterest'],
             ['https://x.substack.com/@user/note/1?r=a',  'substack'],
             ['https://suno.com/s/abc-123',               'suno'],
+            ['https://www.spotify.com/wrapped-share/0123456789abcdef0123456789abcdef', 'spotify'],
             ['https://t.me/joinchat/AAAAAAA',            'telegram'],
             ['https://clips.twitch.tv/TestClipSlug',     'twitch'],
             ['https://reddit.com/r/test/s/abc123',       'reddit'],

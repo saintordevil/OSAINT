@@ -22,6 +22,7 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 | **Pinterest** | Username, user ID, name, avatar | Invite metadata API |
 | **Substack** | User ID, name, handle, bio, photo | Referral parameter in page preloads |
 | **Suno** | Username, name, avatar | Share code API |
+| **Spotify Wrapped** | Sender display name, sender image, share-card metadata | `shareData.sender_name` in public Wrapped share pages |
 | **Telegram** | Creator user ID | Base64 decoded from joinchat hash (offline) |
 | **Twitch** | Clip creator username, user ID, channel | Twitch GQL API |
 | **Reddit** | Sharer username, subreddit, post ID | Mobile share link redirect |
@@ -53,6 +54,7 @@ node osaint.js "https://www.bilibili.com/video/BV...?mid=123456"
 node osaint.js "https://pan.baidu.com/share/link?shareid=123&uk=456"
 node osaint.js "https://music.163.com/song/123/?userid=456"
 node osaint.js "https://www.zhihu.com/question/123?utm_member=..."
+node osaint.js "https://www.spotify.com/wrapped-share/0123456789abcdef0123456789abcdef"
 node osaint.js "https://discord.gg/invite123"
 
 # JSON output (for scripting)
@@ -112,6 +114,8 @@ Each platform handles share links differently:
 - **Telegram** -- The joinchat hash is base64-encoded. The first 4 bytes decode to the group creator's numeric user ID. No HTTP request needed.
 
 - **Twitch** -- Clip URLs are resolved via Twitch's public GQL API, which returns the clip creator's (clipper's) username and user ID.
+
+- **Spotify Wrapped** -- Public Wrapped share links expose a `shareData.sender_name` field in the page payload, along with sender image and share-card metadata. OSAINT only supports Wrapped share links and intentionally rejects normal track, artist, album, and playlist URLs because their `si` / `dlsi` tokens have not been verified to expose the sharer.
 
 ## Technical Details
 

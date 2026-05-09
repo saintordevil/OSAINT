@@ -14,7 +14,7 @@ const DISPLAY_NAMES = {
     xiaohongshu: 'Xiaohongshu', bilibili: 'Bilibili', baidu: 'Baidu Pan',
     netease: 'NetEase Music', zhihu: 'Zhihu',
     claude: 'Claude', perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
-    substack: 'Substack', suno: 'Suno', telegram: 'Telegram',
+    substack: 'Substack', suno: 'Suno', spotify: 'Spotify Wrapped', telegram: 'Telegram',
     twitch: 'Twitch', reddit: 'Reddit',
 };
 function displayName(name) { return DISPLAY_NAMES[name] || name; }
