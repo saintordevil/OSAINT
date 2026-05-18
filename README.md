@@ -31,7 +31,8 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 
 - Node.js 18+
 - Windows / macOS / Linux
-- **PowerShell** or **Windows Terminal** recommended on Windows (cmd.exe may not display animations correctly)
+- On Windows, **Windows Terminal with the Command Prompt profile** is recommended for the cleanest box drawing, redraws, and line spacing.
+- PowerShell works for normal output, but it can render live redraws and wrapped box lines less cleanly.
 
 ## Install
 
@@ -43,7 +44,9 @@ npm install
 
 ## Usage
 
-Always wrap URLs in quotes (required in PowerShell due to `&` characters).
+On Windows, open Windows Terminal and choose the Command Prompt profile, then run OSAINT from there for the cleanest terminal UI.
+
+Always wrap URLs in quotes. This is especially important in PowerShell because `&` characters are parsed as command separators.
 
 ```bash
 # Analyze a share link

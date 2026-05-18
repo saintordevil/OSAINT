@@ -21,17 +21,21 @@ function displayName(name) { return DISPLAY_NAMES[name] || name; }
 
 // ─── BOX PRIMITIVES ──────────────────────────────────────────────────────────
 
-function line(c = '=') { return `   ${DG}+${c.repeat(BOX_W)}+${RST}`; }
+function line(c = '=') {
+    if (c === '-') return `${DG}├${'─'.repeat(BOX_W)}┤${RST}`;
+    if (c === 'bottom') return `${DG}└${'─'.repeat(BOX_W)}┘${RST}`;
+    return `${DG}┌${'─'.repeat(BOX_W)}┐${RST}`;
+}
 function row(content)  {
     const vl = visLen(content);
-    if (vl > BOX_W - 2) {
-        const overBy = vl - (BOX_W - 5);
+    if (vl > BOX_W) {
+        const overBy = vl - (BOX_W - 3);
         const stripped = content.substring(0, content.length - overBy);
-        const pad = Math.max(0, BOX_W - 2 - visLen(stripped) - 3);
-        return `   ${DG}|${RST} ${stripped}...${' '.repeat(pad)} ${DG}|${RST}`;
+        const pad = Math.max(0, BOX_W - visLen(stripped) - 3);
+        return `${DG}│${RST}${stripped}...${' '.repeat(pad)}${DG}│${RST}`;
     }
-    const pad = Math.max(0, BOX_W - 2 - vl);
-    return `   ${DG}|${RST} ${content}${' '.repeat(pad)} ${DG}|${RST}`;
+    const pad = Math.max(0, BOX_W - vl);
+    return `${DG}│${RST}${content}${' '.repeat(pad)}${DG}│${RST}`;
 }
 function empty() { return row(''); }
 
@@ -167,8 +171,8 @@ export function printBanner() {
         '', top, empty(),
         ...style.art,
         empty(), mid,
-        row(`   ${DG}Share Link Intelligence${RST}              ${DIM}${DG}v1.0.0${RST}`),
-        top, '',
+        row(`${DG}Share Link Intelligence${RST}${' '.repeat(34)}${DIM}${DG}v1.0.0${RST}`),
+        line('bottom'), '',
     ];
     console.log(lines.join('\n'));
 }
@@ -179,10 +183,10 @@ export function printTargetBox(platform, url) {
     const maxUrl = BOX_W - 18;
     const truncUrl = url.length > maxUrl ? url.substring(0, maxUrl - 3) + '...' : url;
     console.log([
-        line('-'),
+        line('='),
         row(`${DG}Platform ${DG}>>${RST}  ${W}${displayName(platform)}${RST}`),
         row(`${DG}Target   ${DG}>>${RST}  ${DIM}${W}${truncUrl}${RST}`),
-        line('-'),
+        line('bottom'),
         '',
     ].join('\n'));
 }
@@ -202,10 +206,10 @@ export function printResults(data, platform) {
         const label = fmtLabel(key);
         const val = fmtValue(key, value);
         const dots = '.'.repeat(Math.max(1, 20 - visLen(label)));
-        lines.push(row(`   ${DG}${label} ${DG}${dots}${RST} ${val}`));
+        lines.push(row(`${DG}${label} ${DG}${dots}${RST} ${val}`));
     }
 
-    lines.push(top, '');
+    lines.push(line('bottom'), '');
     console.log(lines.join('\n'));
 }
 
@@ -213,10 +217,10 @@ export function printResults(data, platform) {
 
 export function printError(message) {
     console.log([
-        line('-'),
+        line('='),
         row(`${BR}>> ${R}Error${RST}`),
-        row(`   ${DIM}${W}${message}${RST}`),
-        line('-'),
+        row(`${DIM}${W}${message}${RST}`),
+        line('bottom'),
         '',
     ].join('\n'));
 }
@@ -234,10 +238,10 @@ export function printPlatformList(platforms) {
     const dn = displayName;
     for (const p of platforms) {
         const name = dn(p.name).padEnd(12);
-        lines.push(row(`   ${DG}>>${RST} ${W}${name}${RST} ${DG}${p.desc}${RST}`));
+        lines.push(row(`${DG}>>${RST} ${W}${name}${RST} ${DG}${p.desc}${RST}`));
     }
 
-    lines.push(top, '');
+    lines.push(line('bottom'), '');
     console.log(lines.join('\n'));
 }
 
@@ -251,25 +255,27 @@ export function printHelp() {
         top,
         row(`${DG}>>${RST} ${W}Usage${RST}`),
         mid,
-        row(`   ${W}node osaint.js ${C}<url>${RST}  ${DG}................${RST} ${DIM}${W}Analyze link${RST}`),
-        row(`   ${W}node osaint.js ${C}<url>${RST} ${BY}--json${RST}  ${DG}........${RST} ${DIM}${W}JSON output${RST}`),
-        row(`   ${W}node osaint.js ${BY}--list${RST}  ${DG}................${RST} ${DIM}${W}Platforms${RST}`),
-        row(`   ${W}node osaint.js ${BY}--test${RST}  ${DG}................${RST} ${DIM}${W}Self-test${RST}`),
-        row(`   ${W}node osaint.js ${BY}--animations${RST}  ${DG}..........${RST} ${DIM}${W}Animations${RST}`),
-        row(`   ${W}node osaint.js ${BY}--help${RST}  ${DG}................${RST} ${DIM}${W}This help${RST}`),
+        row(`${W}node osaint.js ${C}<url>${RST}  ${DG}................${RST} ${DIM}${W}Analyze link${RST}`),
+        row(`${W}node osaint.js ${C}<url>${RST} ${BY}--json${RST}  ${DG}........${RST} ${DIM}${W}JSON output${RST}`),
+        row(`${W}node osaint.js ${BY}--list${RST}  ${DG}................${RST} ${DIM}${W}Platforms${RST}`),
+        row(`${W}node osaint.js ${BY}--test${RST}  ${DG}................${RST} ${DIM}${W}Self-test${RST}`),
+        row(`${W}node osaint.js ${BY}--animations${RST}  ${DG}..........${RST} ${DIM}${W}Animations${RST}`),
+        row(`${W}node osaint.js ${BY}--help${RST}  ${DG}................${RST} ${DIM}${W}This help${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Flags${RST}`),
         mid,
-        row(`   ${BY}-j${RST}  ${DG}--json${RST}   ${DG}>>  ${DIM}${W}Output raw JSON for scripting${RST}`),
-        row(`   ${BY}-q${RST}  ${DG}--quiet${RST}  ${DG}>>  ${DIM}${W}Suppress banner${RST}`),
-        row(`   ${BY}-l${RST}  ${DG}--list${RST}   ${DG}>>  ${DIM}${W}Show all supported platforms${RST}`),
-        row(`   ${BY}-h${RST}  ${DG}--help${RST}   ${DG}>>  ${DIM}${W}Show this help${RST}`),
+        row(`${BY}-j${RST}  ${DG}--json${RST}   ${DG}>>  ${DIM}${W}Output raw JSON for scripting${RST}`),
+        row(`${BY}-q${RST}  ${DG}--quiet${RST}  ${DG}>>  ${DIM}${W}Suppress banner${RST}`),
+        row(`${BY}-l${RST}  ${DG}--list${RST}   ${DG}>>  ${DIM}${W}Show all supported platforms${RST}`),
+        row(`${BY}-h${RST}  ${DG}--help${RST}   ${DG}>>  ${DIM}${W}Show this help${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Note${RST}`),
         mid,
-        row(`   ${DIM}${W}Always wrap URLs in quotes in PowerShell${RST}`),
-        row(`   ${DIM}${W}e.g. node osaint.js ${C}"https://..."${RST}`),
-        top, '',
+        row(`${DIM}${W}Best display: Windows Terminal with Command Prompt${RST}`),
+        row(`${DIM}${W}PowerShell can wrap/redraw box lines less cleanly${RST}`),
+        row(`${DIM}${W}Always wrap URLs in quotes in PowerShell${RST}`),
+        row(`${DIM}${W}e.g. node osaint.js ${C}"https://..."${RST}`),
+        line('bottom'), '',
     ].join('\n'));
 }
 
@@ -283,29 +289,31 @@ export function printCommands() {
         top,
         row(`${DG}>>${RST} ${W}Commands${RST}`),
         mid,
-        row(`   ${BY}--help${RST}    ${DG}${BY}-h${RST}  ${DG}>>  ${DIM}${W}Quick usage guide${RST}`),
-        row(`   ${BY}--howto${RST}   ${BY}--how${RST}${DG}>>  ${DIM}${W}Detailed guide per platform${RST}`),
-        row(`   ${BY}--commands${RST} ${BY}--cmd${RST}${DG}>>  ${DIM}${W}This command list${RST}`),
-        row(`   ${BY}--list${RST}    ${DG}${BY}-l${RST}  ${DG}>>  ${DIM}${W}Show supported platforms${RST}`),
-        row(`   ${BY}--test${RST}         ${DG}>>  ${DIM}${W}Run self-test suite${RST}`),
-        row(`   ${BY}--banner${RST}       ${DG}>>  ${DIM}${W}Preview all banner styles${RST}`),
-        row(`   ${BY}--set-banner=N${RST} ${DG}>>  ${DIM}${W}Set banner to style N${RST}`),
-        row(`   ${BY}--animations${RST}   ${DG}>>  ${DIM}${W}Preview all animation styles${RST}`),
-        row(`   ${BY}--anim-demo=N${RST} ${DG}>>  ${DIM}${W}Live demo of animation N${RST}`),
-        row(`   ${BY}--set-loading=N${RST}${DG}>>  ${DIM}${W}Set loading animation to N${RST}`),
-        row(`   ${BY}--set-idle=N${RST}   ${DG}>>  ${DIM}${W}Set idle animation to N${RST}`),
+        row(`${BY}--help${RST}    ${DG}${BY}-h${RST}  ${DG}>>  ${DIM}${W}Quick usage guide${RST}`),
+        row(`${BY}--howto${RST}   ${BY}--how${RST}${DG}>>  ${DIM}${W}Detailed guide per platform${RST}`),
+        row(`${BY}--commands${RST} ${BY}--cmd${RST}${DG}>>  ${DIM}${W}This command list${RST}`),
+        row(`${BY}--list${RST}    ${DG}${BY}-l${RST}  ${DG}>>  ${DIM}${W}Show supported platforms${RST}`),
+        row(`${BY}--test${RST}         ${DG}>>  ${DIM}${W}Run self-test suite${RST}`),
+        row(`${BY}--banner${RST}       ${DG}>>  ${DIM}${W}Preview all banner styles${RST}`),
+        row(`${BY}--set-banner=N${RST} ${DG}>>  ${DIM}${W}Set banner to style N${RST}`),
+        row(`${BY}--animations${RST}   ${DG}>>  ${DIM}${W}Preview all animation styles${RST}`),
+        row(`${BY}--anim-demo=N${RST} ${DG}>>  ${DIM}${W}Live demo of animation N${RST}`),
+        row(`${BY}--set-loading=N${RST}${DG}>>  ${DIM}${W}Set loading animation to N${RST}`),
+        row(`${BY}--set-idle=N${RST}   ${DG}>>  ${DIM}${W}Set idle animation to N${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Analysis${RST}`),
         mid,
-        row(`   ${C}<url>${RST}              ${DG}>>  ${DIM}${W}Analyze a share link${RST}`),
-        row(`   ${C}<url>${RST} ${BY}--json${RST}       ${DG}>>  ${DIM}${W}Output as JSON${RST}`),
-        row(`   ${C}<url>${RST} ${BY}--quiet${RST}      ${DG}>>  ${DIM}${W}No banner, just results${RST}`),
-        row(`   ${C}<url>${RST} ${BY}-q --json${RST}    ${DG}>>  ${DIM}${W}Clean JSON only${RST}`),
+        row(`${C}<url>${RST}              ${DG}>>  ${DIM}${W}Analyze a share link${RST}`),
+        row(`${C}<url>${RST} ${BY}--json${RST}       ${DG}>>  ${DIM}${W}Output as JSON${RST}`),
+        row(`${C}<url>${RST} ${BY}--quiet${RST}      ${DG}>>  ${DIM}${W}No banner, just results${RST}`),
+        row(`${C}<url>${RST} ${BY}-q --json${RST}    ${DG}>>  ${DIM}${W}Clean JSON only${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Note${RST}`),
         mid,
-        row(`   ${DIM}${W}Always wrap URLs in ${C}"quotes"${DIM}${W} in PowerShell${RST}`),
-        top, '',
+        row(`${DIM}${W}Best display: Windows Terminal with Command Prompt${RST}`),
+        row(`${DIM}${W}PowerShell can wrap/redraw box lines less cleanly${RST}`),
+        row(`${DIM}${W}Always wrap URLs in ${C}"quotes"${DIM}${W} in PowerShell${RST}`),
+        line('bottom'), '',
     ].join('\n'));
 }
 
@@ -319,105 +327,105 @@ export function printHowTo() {
         top,
         row(`${DG}>>${RST} ${W}How OSAINT Works${RST}`),
         mid,
-        row(`   ${DIM}${W}When someone shares a link on social media, the${RST}`),
-        row(`   ${DIM}${W}platform injects tracking data into the URL that${RST}`),
-        row(`   ${DIM}${W}can reveal ${C}who shared it${DIM}${W}. OSAINT extracts this.${RST}`),
+        row(`${DIM}${W}When someone shares a link on social media, the${RST}`),
+        row(`${DIM}${W}platform injects tracking data into the URL that${RST}`),
+        row(`${DIM}${W}can reveal ${C}who shared it${DIM}${W}. OSAINT extracts this.${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Instagram${RST}  ${DG}>> igsh= parameter${RST}`),
         mid,
-        row(`   ${DIM}${W}Tap Share >> Copy Link on any reel or post.${RST}`),
-        row(`   ${DIM}${W}The ${C}?igsh=${DIM}${W} param is tied to the sharer's account.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}username, user ID, name, avatar${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}instagram.com/reel/abc/?igsh=MXdxazJ5...${RST}`),
+        row(`${DIM}${W}Tap Share >> Copy Link on any reel or post.${RST}`),
+        row(`${DIM}${W}The ${C}?igsh=${DIM}${W} param is tied to the sharer's account.${RST}`),
+        row(`${DIM}${W}Returns: ${C}username, user ID, name, avatar${RST}`),
+        row(`${DG}Ex: ${DIM}${C}instagram.com/reel/abc/?igsh=MXdxazJ5...${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Discord${RST}  ${DG}>> invite code${RST}`),
         mid,
-        row(`   ${DIM}${W}Click Invite People >> Copy in any server.${RST}`),
-        row(`   ${DIM}${W}The invite code maps to the inviter's account.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}username, user ID, avatar, created date${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}discord.gg/r5Kx7Gp${RST}`),
+        row(`${DIM}${W}Click Invite People >> Copy in any server.${RST}`),
+        row(`${DIM}${W}The invite code maps to the inviter's account.${RST}`),
+        row(`${DIM}${W}Returns: ${C}username, user ID, avatar, created date${RST}`),
+        row(`${DG}Ex: ${DIM}${C}discord.gg/r5Kx7Gp${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}TikTok${RST}  ${DG}>> short link tracking${RST}`),
         mid,
-        row(`   ${DIM}${W}Tap Share >> Copy Link on any video.${RST}`),
-        row(`   ${DIM}${W}The short URL embeds sharer data in redirect.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}username, name, share token, timestamp${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}vm.tiktok.com/ZMkGYwJUa/${RST}`),
+        row(`${DIM}${W}Tap Share >> Copy Link on any video.${RST}`),
+        row(`${DIM}${W}The short URL embeds sharer data in redirect.${RST}`),
+        row(`${DIM}${W}Returns: ${C}username, name, share token, timestamp${RST}`),
+        row(`${DG}Ex: ${DIM}${C}vm.tiktok.com/ZMkGYwJUa/${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Twitch${RST}  ${DG}>> clip creator via GQL API${RST}`),
         mid,
-        row(`   ${DIM}${W}Click Share on any clip.${RST}`),
-        row(`   ${DIM}${W}The clip URL reveals who ${C}captured${DIM}${W} the clip.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}clipper username, user ID, channel${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}clips.twitch.tv/FunnyClipSlug-abc123${RST}`),
+        row(`${DIM}${W}Click Share on any clip.${RST}`),
+        row(`${DIM}${W}The clip URL reveals who ${C}captured${DIM}${W} the clip.${RST}`),
+        row(`${DIM}${W}Returns: ${C}clipper username, user ID, channel${RST}`),
+        row(`${DG}Ex: ${DIM}${C}clips.twitch.tv/FunnyClipSlug-abc123${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Microsoft${RST}  ${DG}>> email in URL (offline)${RST}`),
         mid,
-        row(`   ${DIM}${W}Click Share >> Copy Link on a SharePoint file.${RST}`),
-        row(`   ${DIM}${W}The sharer's email is encoded in the URL path.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}email address${RST}  ${DG}(no HTTP needed)${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}company-my.sharepoint.com/.../jane_doe_co_com/${RST}`),
+        row(`${DIM}${W}Click Share >> Copy Link on a SharePoint file.${RST}`),
+        row(`${DIM}${W}The sharer's email is encoded in the URL path.${RST}`),
+        row(`${DIM}${W}Returns: ${C}email address${RST}  ${DG}(no HTTP needed)${RST}`),
+        row(`${DG}Ex: ${DIM}${C}company-my.sharepoint.com/.../jane_doe_co_com/${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Telegram${RST}  ${DG}>> creator ID from hash (offline)${RST}`),
         mid,
-        row(`   ${DIM}${W}Create an invite link in a group.${RST}`),
-        row(`   ${DIM}${W}The hash decodes to the creator's numeric ID.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}creator user ID${RST}  ${DG}(no HTTP needed)${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}t.me/joinchat/BgFGOkI4OTk${RST}`),
+        row(`${DIM}${W}Create an invite link in a group.${RST}`),
+        row(`${DIM}${W}The hash decodes to the creator's numeric ID.${RST}`),
+        row(`${DIM}${W}Returns: ${C}creator user ID${RST}  ${DG}(no HTTP needed)${RST}`),
+        row(`${DG}Ex: ${DIM}${C}t.me/joinchat/BgFGOkI4OTk${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Bilibili${RST}  ${DG}>> sharer MID in app URL${RST}`),
         mid,
-        row(`   ${DIM}${W}Share from the Bilibili app.${RST}`),
-        row(`   ${DIM}${W}Some app URLs include the sharer's ${C}mid${DIM}${W}.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}user ID, profile URL${RST}  ${DG}(offline)${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}bilibili.com/video/BV...?mid=123${RST}`),
+        row(`${DIM}${W}Share from the Bilibili app.${RST}`),
+        row(`${DIM}${W}Some app URLs include the sharer's ${C}mid${DIM}${W}.${RST}`),
+        row(`${DIM}${W}Returns: ${C}user ID, profile URL${RST}  ${DG}(offline)${RST}`),
+        row(`${DG}Ex: ${DIM}${C}bilibili.com/video/BV...?mid=123${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Baidu Pan${RST}  ${DG}>> sharer UK in old links${RST}`),
         mid,
-        row(`   ${DIM}${W}Old Netdisk share links include ${C}uk${DIM}${W}.${RST}`),
-        row(`   ${DIM}${W}That UK maps to the sharer's public share home.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}user ID, profile URL, share ID${RST}  ${DG}(offline)${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}pan.baidu.com/share/link?shareid=1&uk=2${RST}`),
+        row(`${DIM}${W}Old Netdisk share links include ${C}uk${DIM}${W}.${RST}`),
+        row(`${DIM}${W}That UK maps to the sharer's public share home.${RST}`),
+        row(`${DIM}${W}Returns: ${C}user ID, profile URL, share ID${RST}  ${DG}(offline)${RST}`),
+        row(`${DG}Ex: ${DIM}${C}pan.baidu.com/share/link?shareid=1&uk=2${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}NetEase Music${RST}  ${DG}>> sharer userid${RST}`),
         mid,
-        row(`   ${DIM}${W}Share from NetEase Cloud Music.${RST}`),
-        row(`   ${DIM}${W}The ${C}userid${DIM}${W} param maps to the sharer's profile.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}user ID, name, avatar${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}music.163.com/song/123/?userid=456${RST}`),
+        row(`${DIM}${W}Share from NetEase Cloud Music.${RST}`),
+        row(`${DIM}${W}The ${C}userid${DIM}${W} param maps to the sharer's profile.${RST}`),
+        row(`${DIM}${W}Returns: ${C}user ID, name, avatar${RST}`),
+        row(`${DG}Ex: ${DIM}${C}music.163.com/song/123/?userid=456${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Zhihu${RST}  ${DG}>> legacy utm_member${RST}`),
         mid,
-        row(`   ${DIM}${W}Some old app shares encoded a member slug.${RST}`),
-        row(`   ${DIM}${W}OSAINT decodes only valid 32-char profile IDs.${RST}`),
-        row(`   ${DIM}${W}Returns: ${C}user ID, profile URL${RST}  ${DG}(offline)${RST}`),
-        row(`   ${DG}Ex: ${DIM}${C}zhihu.com/question/1?utm_member=...${RST}`),
+        row(`${DIM}${W}Some old app shares encoded a member slug.${RST}`),
+        row(`${DIM}${W}OSAINT decodes only valid 32-char profile IDs.${RST}`),
+        row(`${DIM}${W}Returns: ${C}user ID, profile URL${RST}  ${DG}(offline)${RST}`),
+        row(`${DG}Ex: ${DIM}${C}zhihu.com/question/1?utm_member=...${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Also Supported${RST}`),
         mid,
-        row(`   ${DG}>>${RST} ${W}Perplexity${RST}  ${DG}Thread author from search URL${RST}`),
-        row(`   ${DG}>>${RST} ${W}Pinterest${RST}   ${DG}Sender from pin.it invite code${RST}`),
-        row(`   ${DG}>>${RST} ${W}Substack${RST}    ${DG}Referring user from ?r= param${RST}`),
-        row(`   ${DG}>>${RST} ${W}Suno${RST}        ${DG}Sharer handle from share code${RST}`),
-        row(`   ${DG}>>${RST} ${W}Xiaohongshu${RST} ${DG}Sharer ID from app share params${RST}`),
-        row(`   ${DG}>>${RST} ${W}Reddit${RST}      ${DG}Sharer from /r/<sub>/s/<id> link${RST}`),
+        row(`${DG}>>${RST} ${W}Perplexity${RST}  ${DG}Thread author from search URL${RST}`),
+        row(`${DG}>>${RST} ${W}Pinterest${RST}   ${DG}Sender from pin.it invite code${RST}`),
+        row(`${DG}>>${RST} ${W}Substack${RST}    ${DG}Referring user from ?r= param${RST}`),
+        row(`${DG}>>${RST} ${W}Suno${RST}        ${DG}Sharer handle from share code${RST}`),
+        row(`${DG}>>${RST} ${W}Xiaohongshu${RST} ${DG}Sharer ID from app share params${RST}`),
+        row(`${DG}>>${RST} ${W}Reddit${RST}      ${DG}Sharer from /r/<sub>/s/<id> link${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Customization${RST}`),
         mid,
-        row(`   ${DIM}${W}OSAINT lets you customize the banner and${RST}`),
-        row(`   ${DIM}${W}animations. Settings are saved to config.${RST}`),
+        row(`${DIM}${W}OSAINT lets you customize the banner and${RST}`),
+        row(`${DIM}${W}animations. Settings are saved to config.${RST}`),
         empty(),
-        row(`   ${BY}--banner${RST}         ${DG}Preview all banner styles${RST}`),
-        row(`   ${BY}--set-banner=N${RST}   ${DG}Set banner to style N${RST}`),
+        row(`${BY}--banner${RST}         ${DG}Preview all banner styles${RST}`),
+        row(`${BY}--set-banner=N${RST}   ${DG}Set banner to style N${RST}`),
         empty(),
-        row(`   ${BY}--animations${RST}     ${DG}Preview all 52 animation styles${RST}`),
-        row(`   ${BY}--anim-demo=N${RST}   ${DG}Live demo of a specific animation${RST}`),
-        row(`   ${BY}--set-loading=N${RST}  ${DG}Set the active/scanning animation${RST}`),
-        row(`   ${BY}--set-idle=N${RST}     ${DG}Set the completed/idle animation${RST}`),
+        row(`${BY}--animations${RST}     ${DG}Preview all 52 animation styles${RST}`),
+        row(`${BY}--anim-demo=N${RST}   ${DG}Live demo of a specific animation${RST}`),
+        row(`${BY}--set-loading=N${RST}  ${DG}Set the active/scanning animation${RST}`),
+        row(`${BY}--set-idle=N${RST}     ${DG}Set the completed/idle animation${RST}`),
         empty(),
-        row(`   ${DIM}${W}Animations come from ${C}unicode-animations${DIM}${W} and${RST}`),
-        row(`   ${DIM}${W}${C}rattles${DIM}${W}. Run ${BY}--animations${DIM}${W} to see the full list.${RST}`),
-        top, '',
+        row(`${DIM}${W}Animations come from ${C}unicode-animations${DIM}${W} and${RST}`),
+        row(`${DIM}${W}${C}rattles${DIM}${W}. Run ${BY}--animations${DIM}${W} to see the full list.${RST}`),
+        line('bottom'), '',
     ].join('\n'));
 }
 
@@ -464,7 +472,7 @@ function fmtValue(key, value) {
 export function showBannerPreviews() {
     const top = line('=');
     const mid = line('-');
-    const sub = row(`   ${DG}Share Link Intelligence${RST}              ${DIM}${DG}v1.0.0${RST}`);
+    const sub = row(`${DG}Share Link Intelligence${RST}${' '.repeat(34)}${DIM}${DG}v1.0.0${RST}`);
     const cfg = loadConfig();
     const styles = getStyles();
 
@@ -480,7 +488,7 @@ export function showBannerPreviews() {
         console.log(empty());
         console.log(mid);
         console.log(sub);
-        console.log(top);
+        console.log(line('bottom'));
     }
     console.log('');
     console.log(`   ${DG}Set banner: ${W}node osaint.js --set-banner=<number>${RST}`);
