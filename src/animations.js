@@ -24,19 +24,19 @@ function saveConfig(cfg) {
 
 // ─── ANIMATION REGISTRY ─────────────────────────────────────────────────────
 // Sources:
-//   unicode-animations  — npm package (already a dependency)
-//   rattles              — github.com/vyfor/rattles (frames ported from Rust)
+//   unicode-animations  - npm package (already a dependency)
+//   rattles              - github.com/vyfor/rattles (frames ported from Rust)
 
 function buildRegistry() {
     const all = [];
 
-    // ── Unicode Animations — Classic ─────────────────────────────────────
+    // ── Unicode Animations - Classic ─────────────────────────────────────
     const uClassic = 'Unicode Animations \u00b7 Classic';
     for (const key of ['braille', 'braillewave', 'dna']) {
         all.push({ key, name: fmtName(key), category: uClassic, ...spinners[key] });
     }
 
-    // ── Unicode Animations — Grid ────────────────────────────────────────
+    // ── Unicode Animations - Grid ────────────────────────────────────────
     const uGrid = 'Unicode Animations \u00b7 Grid';
     for (const key of [
         'scan', 'rain', 'scanline', 'pulse', 'snake', 'sparkle',
@@ -46,7 +46,7 @@ function buildRegistry() {
         all.push({ key, name: fmtName(key), category: uGrid, ...spinners[key] });
     }
 
-    // ── Rattles — ASCII ──────────────────────────────────────────────────
+    // ── Rattles - ASCII ──────────────────────────────────────────────────
     const rAscii = 'Rattles \u00b7 ASCII';
     all.push({ key: 'arc',              name: 'Arc',              category: rAscii, frames: ['\u25dc','\u25e0','\u25dd','\u25de','\u25e1','\u25df'], interval: 100 });
     all.push({ key: 'balloon',          name: 'Balloon',          category: rAscii, frames: [' ','.','\u006f','O','@','*',' '], interval: 140 });
@@ -64,7 +64,7 @@ function buildRegistry() {
     all.push({ key: 'toggle',          name: 'Toggle',           category: rAscii, frames: ['\u22b6','\u22b7'], interval: 250 });
     all.push({ key: 'triangle',        name: 'Triangle',         category: rAscii, frames: ['\u25e2','\u25e3','\u25e4','\u25e5'], interval: 120 });
 
-    // ── Rattles — Braille ────────────────────────────────────────────────
+    // ── Rattles - Braille ────────────────────────────────────────────────
     const rBraille = 'Rattles \u00b7 Braille';
     all.push({ key: 'dots',   name: 'Dots',   category: rBraille, frames: ['\u280b','\u2819','\u2839','\u2838','\u283c','\u2834','\u2826','\u2827','\u2807','\u280f'], interval: 80 });
     all.push({ key: 'dots2',  name: 'Dots 2', category: rBraille, frames: ['\u28fe','\u28fd','\u28fb','\u28bf','\u287f','\u28df','\u28ef','\u28f7'], interval: 80 });
@@ -188,7 +188,7 @@ export function showAnimationPreviews() {
             marker = `  ${G}[idle]${RST}`;
         }
 
-        // Sample frames — fit within remaining box width
+        // Sample frames fit within remaining box width
         // Layout: 3(num) + 2 + 18(name) + 1 = 24 chars before frames
         const markerLen = marker ? visLen(marker) : 0;
         const maxSampleW = 63 - 24 - markerLen - 1;

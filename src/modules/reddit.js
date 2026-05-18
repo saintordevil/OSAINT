@@ -38,10 +38,6 @@ export default async function reddit(url) {
             const sharedBy = html.match(/"sharedByUser"\s*:\s*"([^"]+)"/);
             if (sharedBy) data.username = sharedBy[1];
 
-            // Try alternate patterns
-            const authorFlair = html.match(/"authorFlair[^"]*".*?"author"\s*:\s*"([^"]+)"/);
-            if (authorFlair && !data.username) data.username = authorFlair[1];
-
             // Extract the resolved post URL from canonical
             const canonical = html.match(/<link\s+rel="canonical"\s+href="([^"]+)"/i);
             if (canonical) {
@@ -60,8 +56,7 @@ export default async function reddit(url) {
         const sidMatch = finalUrl.match(/[?&]sid=([\w-]+)/);
         if (sidMatch) data.share_token = sidMatch[1];
 
-        if (Object.keys(data).length <= 2) {
-            // Only have subreddit + share_token, no identity found
+        if (!data.username) {
             return { error: 'Could not extract sharer identity from this Reddit share link' };
         }
 
