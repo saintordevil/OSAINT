@@ -189,9 +189,9 @@ export function showAnimationPreviews() {
         }
 
         // Sample frames — fit within remaining box width
-        // Layout: 2 + 3(num) + 2 + 18(name) + 1 = 26 chars before frames
+        // Layout: 3(num) + 2 + 18(name) + 1 = 24 chars before frames
         const markerLen = marker ? visLen(marker) : 0;
-        const maxSampleW = 61 - 26 - markerLen - 1;
+        const maxSampleW = 63 - 24 - markerLen - 1;
         let samples = '';
         for (let f = 0; f < Math.min(8, a.frames.length); f++) {
             const next = samples ? samples + ' ' + a.frames[f] : a.frames[f];
@@ -201,17 +201,17 @@ export function showAnimationPreviews() {
 
         const numStr = `${C}${String(num).padStart(3)}${RST}`;
         const nameStr = `${W}${a.name.padEnd(18)}${RST}`;
-        console.log(row(`  ${numStr}  ${nameStr} ${DIM}${samples}${RST}${marker}`));
+        console.log(row(`${numStr}  ${nameStr} ${DIM}${samples}${RST}${marker}`));
     }
 
     console.log(empty());
-    console.log(line('='));
+    console.log(line('-'));
     console.log(empty());
     console.log(row(`${DG}Set loading:${RST}  ${W}node osaint.js --set-loading=<number>${RST}`));
     console.log(row(`${DG}Set idle:${RST}     ${W}node osaint.js --set-idle=<number>${RST}`));
     console.log(row(`${DG}Live demo:${RST}    ${W}node osaint.js --anim-demo=<number>${RST}`));
     console.log(empty());
-    console.log(line('='));
+    console.log(line('bottom'));
     console.log('');
 }
 
@@ -225,10 +225,10 @@ export function demoAnimation(num) {
     return new Promise((resolve) => {
         process.stdout.write(HIDE);
         console.log('');
-        console.log(line('-'));
+        console.log(line('='));
         console.log(row(`${DG}>>${RST} ${W}Live Demo: ${C}${anim.name}${RST}  ${DG}(${anim.category})${RST}`));
         console.log(row(`${DG}Interval: ${W}${anim.interval}ms${RST}  ${DG}Frames: ${W}${anim.frames.length}${RST}`));
-        console.log(line('-'));
+        console.log(line('bottom'));
         console.log('');
 
         let fi = 0;
