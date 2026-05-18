@@ -1,7 +1,7 @@
 {
   "name": "osaint",
   "version": "1.0.0",
-  "description": "OSAINT - Reveal the identity behind a share link",
+  "description": "OSAINT - Extract public account identifiers from share, invite, and profile links across 50 modules",
   "main": "osaint.js",
   "bin": {
     "osaint": "./osaint.js"
@@ -14,7 +14,7 @@
   "keywords": [
     "osint",
     "share-link",
-    "identity",
+    "account-identifiers",
     "tracker"
   ],
   "author": "OSAINT",

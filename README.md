@@ -1,8 +1,10 @@
 # OSAINT
 
-Share Link Intelligence -- reveal who shared a link by analyzing the tracking parameters platforms inject into share URLs.
+Share Link Intelligence: reveal public account identifiers embedded in share, invite, profile, and booking links across 50 supported modules.
 
-When someone taps "Copy Link" or "Share" on social media, the platform embeds tracking data in the URL that ties back to the sharer's account. OSAINT extracts this data.
+When someone taps "Copy Link" or "Share", some platforms add sender tracking fields. Other public link types expose the account, host, organizer, booking owner, or clip creator tied to the copied link. OSAINT extracts only public identifiers from those links and rejects normal content URLs that do not expose a link-tied account.
+
+OSAINT currently includes **50 modules**. The full supported platform list is below.
 
 ## Supported Platforms
 
@@ -23,6 +25,38 @@ When someone taps "Copy Link" or "Share" on social media, the platform embeds tr
 | **Substack** | User ID, name, handle, bio, photo | Referral parameter in page preloads |
 | **Suno** | Username, name, avatar | Share code API |
 | **Spotify Wrapped** | Sender display name, sender image, share-card metadata | `shareData.sender_name` in public Wrapped share pages |
+| **YouTube Clips** | Clip creator display name, clip ID | `Clipped by` metadata on public clip pages |
+| **Google Photos** | Shared album owner Google account ID, name, avatar when exposed | `(Owner)` actor marker in public shared album page |
+| **Partiful** | Event host or owner user ID, name/avatar/socials when exposed | Public event invite page data |
+| **Lu.ma** | Event host user ID, name, avatar, socials | Public event page data |
+| **Eventbrite** | Organizer name, profile, and account ID when exposed | JSON-LD or public event page data |
+| **Microsoft Teams** | Organizer user object ID, tenant ID | Embedded `context` parameter in meeting invite URLs |
+| **WhatsApp** | Phone/account ID | `wa.me` / click-to-chat link path |
+| **QQ Contact** | QQ account number | `uin` parameter in WPA links |
+| **Steam Trade** | Steam account ID, SteamID64, trade token | `partner` / `token` parameters in user-created trade URLs |
+| **OneDrive Personal** | Owner CID / account container ID | `cid` / `resid` parameters in personal OneDrive links |
+| **Cash App** | Cashtag / payment profile | `$cashtag` path |
+| **Venmo** | Username or user ID | `/u/{username}` and QR `user_id` links |
+| **PayPal.Me** | Payment profile handle, display metadata when public | Profile path and public page metadata |
+| **Ko-fi** | Creator handle, display name/avatar when public | Profile path and public page metadata |
+| **Buy Me a Coffee** | Creator handle, display name/avatar when public | Profile path and public page metadata |
+| **Patreon** | Creator handle, display metadata when public | Creator profile path and public metadata |
+| **Linktree** | Profile handle, display metadata when public | Profile path and public metadata |
+| **Beacons** | Profile handle, display metadata when public | Profile path and public metadata |
+| **Calendly** | Booking owner slug, display metadata when public | Scheduling link path and page metadata |
+| **Cal.com** | Booking owner username, name, avatar | Public OG image params and page metadata |
+| **TidyCal** | Booking owner slug/name | Booking link path and title metadata |
+| **YouCanBookMe** | Booking owner subdomain | Booking-page subdomain and page metadata |
+| **SavvyCal** | Booking owner slug, display metadata when public | Booking link path and page metadata |
+| **Acuity Scheduling** | Owner account ID | `owner` parameter in schedule links |
+| **Ticket Tailor** | Box-office owner slug, event ID | Event URL path |
+| **Humanitix** | Event host/organizer name when public | JSON-LD public event page data |
+| **Meetup** | Group/organizer slug, event ID, host metadata | Event URL path and JSON-LD |
+| **TicketLeap** | Organizer slug, event ID | Event URL path |
+| **Eventzilla** | Organizer name/profile when public | JSON-LD public event page data |
+| **Universe** | Organizer name/profile when public | JSON-LD / public event page data |
+| **Loom** | Recording owner user ID, name, avatar | Apollo page state |
+| **Medal.tv** | Clip recorder/poster user ID, name, avatar | JSON-LD and page payload |
 | **Telegram** | Creator user ID | Base64 decoded from joinchat hash (offline) |
 | **Twitch** | Clip creator username, user ID, channel | Twitch GQL API |
 | **Reddit** | Sharer username, subreddit, post ID | Mobile share link redirect |
@@ -58,6 +92,20 @@ node osaint.js "https://pan.baidu.com/share/link?shareid=123&uk=456"
 node osaint.js "https://music.163.com/song/123/?userid=456"
 node osaint.js "https://www.zhihu.com/question/123?utm_member=..."
 node osaint.js "https://www.spotify.com/wrapped-share/0123456789abcdef0123456789abcdef"
+node osaint.js "https://youtube.com/clip/Ugkx..."
+node osaint.js "https://photos.app.goo.gl/abc123"
+node osaint.js "https://partiful.com/e/abc123def456"
+node osaint.js "https://lu.ma/abc123"
+node osaint.js "https://www.eventbrite.com/e/example-tickets-1234567890"
+node osaint.js "https://teams.microsoft.com/l/meetup-join/..."
+node osaint.js "https://wa.me/447577138632"
+node osaint.js "https://steamcommunity.com/tradeoffer/new/?partner=123456&token=abcdEF12"
+node osaint.js 'https://cash.app/$example'
+node osaint.js "https://cal.com/baseline"
+node osaint.js "https://tidycal.com/example/15-minute-meeting"
+node osaint.js "https://www.tickettailor.com/events/example/123456"
+node osaint.js "https://events.humanitix.com/example-event"
+node osaint.js "https://www.loom.com/share/696fb088168d43f4ac339d3043065869"
 node osaint.js "https://discord.gg/invite123"
 
 # JSON output (for scripting)
@@ -92,38 +140,22 @@ node osaint.js --set-idle=N      # Set the completed/idle animation
 
 ## How It Works
 
-Each platform handles share links differently:
+Different platforms expose link-tied account data in different ways. These are the main social modules:
 
-- **TikTok** -- Short links (`vm.tiktok.com`) redirect through TikTok's servers. When fetched with a mobile User-Agent, TikTok embeds the sharer's full profile in the page HTML under `webapp.reflow.global.shareUser`. Only works if the sharer has "Display profile when sharing links" enabled in their privacy settings.
+- **Instagram**: The `igsh` parameter in share URLs is a tracking ID tied to the sharer's account. Instagram can embed the sharer's profile in the page response via `xdt_get_relationship_for_shid_logged_out`. Availability varies per share and is controlled server-side.
 
-- **Instagram** -- The `igsh` parameter in share URLs is a tracking ID tied to the sharer's account. Instagram embeds the sharer's profile in the page response via `xdt_get_relationship_for_shid_logged_out`. Availability varies per share and is controlled server-side.
+- **TikTok**: Short links (`vm.tiktok.com`) redirect through TikTok's servers. When fetched with a mobile User-Agent, TikTok can embed the sharer's profile in the page HTML under `webapp.reflow.global.shareUser`. This only works if the sharer has "Display profile when sharing links" enabled in privacy settings.
 
-- **Xiaohongshu / RED** -- App share URLs can include `appuid` or `shareRedId` parameters tied to the sharing account. OSAINT extracts the direct user ID when present and records hidden-sharing/share-method metadata from the same URL.
+- **Spotify Wrapped**: Public Wrapped share links expose a `shareData.sender_name` field in the page payload, along with sender image and share-card metadata. OSAINT only supports Wrapped share links and intentionally rejects normal track, artist, album, and playlist URLs because their `si` and `dlsi` tokens have not been verified to expose the sharer.
 
-- **Bilibili** -- Some app share URLs include `mid` or `share_mid`, which is the sharing account's numeric MID. OSAINT extracts it offline and builds the public `space.bilibili.com/{mid}` profile URL. It ignores `up_id` because that is usually the uploader/content owner.
+- **Discord**: Invite codes are resolved through Discord's public invite API, which can return the inviter's username, ID, avatar, and account creation date decoded from the snowflake ID.
 
-- **Baidu Pan** -- Old Baidu Netdisk share URLs expose `uk`, the sharing account's public user key. OSAINT extracts it offline and builds the public `pan.baidu.com/share/home?uk=...` share-home URL.
-
-- **NetEase Cloud Music** -- Share URLs can include `userid`, which maps to the sharing account. OSAINT resolves it through NetEase's public user-detail endpoint when available and keeps `creatorId` separate as content creator metadata.
-
-- **Zhihu** -- Legacy app shares can include `utm_member`, which is a base64-encoded 32-character profile slug. OSAINT only accepts values that decode cleanly to that strict profile ID shape.
-
-- **Discord** -- Invite codes are resolved via Discord's public API (`/api/v9/invites/{code}`), which returns the inviter's username, ID, avatar, and account creation date (decoded from the snowflake ID).
-
-- **Claude** -- Share links are resolved via the `chat_snapshots` API endpoint, which returns the creator's display name and UUID. Uses TLS fingerprint impersonation to bypass CloudFlare.
-
-- **Microsoft SharePoint** -- The sharer's email is encoded directly in the URL path as `first_last_domain_tld`. Decoded offline with no HTTP request needed.
-
-- **Telegram** -- The joinchat hash is base64-encoded. The first 4 bytes decode to the group creator's numeric user ID. No HTTP request needed.
-
-- **Twitch** -- Clip URLs are resolved via Twitch's public GQL API, which returns the clip creator's (clipper's) username and user ID.
-
-- **Spotify Wrapped** -- Public Wrapped share links expose a `shareData.sender_name` field in the page payload, along with sender image and share-card metadata. OSAINT only supports Wrapped share links and intentionally rejects normal track, artist, album, and playlist URLs because their `si` / `dlsi` tokens have not been verified to expose the sharer.
+- **Telegram**: Some legacy `joinchat` hashes are base64-encoded. The first 4 bytes can decode to the invite creator's numeric user ID. No HTTP request is needed.
 
 ## Technical Details
 
 - Uses `node-tls-client` for Chrome TLS fingerprint impersonation to bypass CloudFlare and bot detection
-- Mobile Android User-Agent for TikTok (required -- TikTok only serves sharer data to mobile browsers)
+- Mobile Android User-Agent for TikTok, required because TikTok only serves sharer data to mobile browsers
 - 52 customizable spinner animations sourced from `unicode-animations` and `rattles` (braille grids, ASCII spinners, braille patterns)
 - 13 swappable ASCII art banner styles
 - All settings persist to `.osaint-config.json`

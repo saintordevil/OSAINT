@@ -1,4 +1,4 @@
-import { R, G, Y, B, M, C, W, DG, BR, BG, BY, BB, BM, BC, BW, BOLD, DIM, RST, visLen } from './colors.js';
+import { R, G, Y, B, M, C, W, DG, BR, BG, BY, BB, BM, BC, BW, BOLD, DIM, RST, stripAnsi, visLen } from './colors.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -15,6 +15,17 @@ const DISPLAY_NAMES = {
     netease: 'NetEase Music', zhihu: 'Zhihu',
     claude: 'Claude', perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
     substack: 'Substack', suno: 'Suno', spotify: 'Spotify Wrapped', telegram: 'Telegram',
+    youtube: 'YouTube', googlephotos: 'Google Photos', partiful: 'Partiful',
+    luma: 'Lu.ma', eventbrite: 'Eventbrite', teams: 'Teams',
+    whatsapp: 'WhatsApp', qqcontact: 'QQ Contact', steamtrade: 'Steam Trade',
+    onedrive: 'OneDrive', cashapp: 'Cash App', venmo: 'Venmo',
+    paypalme: 'PayPal.Me', kofi: 'Ko-fi', buymeacoffee: 'Buy Me a Coffee',
+    patreon: 'Patreon', linktree: 'Linktree', beacons: 'Beacons',
+    calendly: 'Calendly', calcom: 'Cal.com', tidycal: 'TidyCal',
+    youcanbookme: 'YouCanBookMe', savvycal: 'SavvyCal', acuity: 'Acuity',
+    tickettailor: 'Ticket Tailor', humanitix: 'Humanitix', meetup: 'Meetup',
+    ticketleap: 'TicketLeap', eventzilla: 'Eventzilla', universe: 'Universe',
+    loom: 'Loom', medal: 'Medal.tv',
     twitch: 'Twitch', reddit: 'Reddit',
 };
 function displayName(name) { return DISPLAY_NAMES[name] || name; }
@@ -26,16 +37,50 @@ function line(c = '=') {
     if (c === 'bottom') return `${DG}└${'─'.repeat(BOX_W)}┘${RST}`;
     return `${DG}┌${'─'.repeat(BOX_W)}┐${RST}`;
 }
-function row(content)  {
-    const vl = visLen(content);
-    if (vl > BOX_W) {
-        const overBy = vl - (BOX_W - 3);
-        const stripped = content.substring(0, content.length - overBy);
-        const pad = Math.max(0, BOX_W - visLen(stripped) - 3);
-        return `${DG}│${RST}${stripped}...${' '.repeat(pad)}${DG}│${RST}`;
+function wrapPlain(text, width) {
+    const words = String(text).replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let current = '';
+
+    function pushHard(value) {
+        let rest = value;
+        while (rest.length > width) {
+            lines.push(rest.slice(0, width));
+            rest = rest.slice(width);
+        }
+        return rest;
     }
-    const pad = Math.max(0, BOX_W - vl);
+
+    for (const word of words) {
+        if (!word) continue;
+        if (word.length > width) {
+            if (current.trimEnd()) lines.push(current.trimEnd());
+            current = pushHard(word);
+            continue;
+        }
+        if (!current) {
+            current = word;
+        } else if (current.length + 1 + word.length <= width) {
+            current += ` ${word}`;
+        } else {
+            lines.push(current.trimEnd());
+            current = word;
+        }
+    }
+
+    if (current.trimEnd()) lines.push(current.trimEnd());
+    return lines.length ? lines : [''];
+}
+function boxedRow(content) {
+    const pad = Math.max(0, BOX_W - visLen(content));
     return `${DG}│${RST}${content}${' '.repeat(pad)}${DG}│${RST}`;
+}
+function row(content)  {
+    if (visLen(content) <= BOX_W) return boxedRow(content);
+
+    return wrapPlain(stripAnsi(content), BOX_W)
+        .map(lineText => boxedRow(lineText))
+        .join('\n');
 }
 function empty() { return row(''); }
 
@@ -180,12 +225,10 @@ export function printBanner() {
 // ─── TARGET INFO ─────────────────────────────────────────────────────────────
 
 export function printTargetBox(platform, url) {
-    const maxUrl = BOX_W - 18;
-    const truncUrl = url.length > maxUrl ? url.substring(0, maxUrl - 3) + '...' : url;
     console.log([
         line('='),
         row(`${DG}Platform ${DG}>>${RST}  ${W}${displayName(platform)}${RST}`),
-        row(`${DG}Target   ${DG}>>${RST}  ${DIM}${W}${truncUrl}${RST}`),
+        row(`${DG}Target   ${DG}>>${RST}  ${DIM}${W}${url}${RST}`),
         line('bottom'),
         '',
     ].join('\n'));
@@ -359,6 +402,20 @@ export function printHowTo() {
         row(`${DIM}${W}Returns: ${C}clipper username, user ID, channel${RST}`),
         row(`${DG}Ex: ${DIM}${C}clips.twitch.tv/FunnyClipSlug-abc123${RST}`),
         mid,
+        row(`${DG}>>${RST} ${W}YouTube${RST}  ${DG}>> clip creator from clip page${RST}`),
+        mid,
+        row(`${DIM}${W}Create or copy a YouTube Clip link.${RST}`),
+        row(`${DIM}${W}Clip pages expose the person who ${C}clipped${DIM}${W} it.${RST}`),
+        row(`${DIM}${W}Returns: ${C}clipper name, clip ID${RST}`),
+        row(`${DG}Ex: ${DIM}${C}youtube.com/clip/Ugkx...${RST}`),
+        mid,
+        row(`${DG}>>${RST} ${W}Teams${RST}  ${DG}>> organizer IDs in meeting URL${RST}`),
+        mid,
+        row(`${DIM}${W}Copy a Microsoft Teams meeting invite link.${RST}`),
+        row(`${DIM}${W}The ${C}context${DIM}${W} param carries organizer and tenant IDs.${RST}`),
+        row(`${DIM}${W}Returns: ${C}user ID, tenant ID${RST}  ${DG}(offline)${RST}`),
+        row(`${DG}Ex: ${DIM}${C}teams.microsoft.com/l/meetup-join/...${RST}`),
+        mid,
         row(`${DG}>>${RST} ${W}Microsoft${RST}  ${DG}>> email in URL (offline)${RST}`),
         mid,
         row(`${DIM}${W}Click Share >> Copy Link on a SharePoint file.${RST}`),
@@ -407,6 +464,17 @@ export function printHowTo() {
         row(`${DG}>>${RST} ${W}Pinterest${RST}   ${DG}Sender from pin.it invite code${RST}`),
         row(`${DG}>>${RST} ${W}Substack${RST}    ${DG}Referring user from ?r= param${RST}`),
         row(`${DG}>>${RST} ${W}Suno${RST}        ${DG}Sharer handle from share code${RST}`),
+        row(`${DG}>>${RST} ${W}Google Photos${RST}${DG}Album owner from shared album${RST}`),
+        row(`${DG}>>${RST} ${W}Partiful${RST}    ${DG}Host user from event invite${RST}`),
+        row(`${DG}>>${RST} ${W}Lu.ma${RST}       ${DG}Host user from event invite${RST}`),
+        row(`${DG}>>${RST} ${W}Eventbrite${RST}  ${DG}Organizer from event invite${RST}`),
+        row(`${DG}>>${RST} ${W}WhatsApp${RST}    ${DG}Phone/account from click-to-chat link${RST}`),
+        row(`${DG}>>${RST} ${W}Steam Trade${RST} ${DG}Steam account from trade URL${RST}`),
+        row(`${DG}>>${RST} ${W}Booking Apps${RST} ${DG}Calendly, Cal.com, TidyCal, Acuity${RST}`),
+        row(`${DG}>>${RST} ${W}Payment Profiles${RST}${DG}Cash App, Venmo, PayPal.Me, Ko-fi${RST}`),
+        row(`${DG}>>${RST} ${W}Profile Hubs${RST} ${DG}Patreon, Linktree, Beacons${RST}`),
+        row(`${DG}>>${RST} ${W}Event Hosts${RST} ${DG}Humanitix, Meetup, TicketLeap, Universe${RST}`),
+        row(`${DG}>>${RST} ${W}Recordings${RST}  ${DG}Loom and Medal clip owners${RST}`),
         row(`${DG}>>${RST} ${W}Xiaohongshu${RST} ${DG}Sharer ID from app share params${RST}`),
         row(`${DG}>>${RST} ${W}Reddit${RST}      ${DG}Sharer from /r/<sub>/s/<id> link${RST}`),
         mid,
@@ -447,7 +515,15 @@ const LABELS = {
     share_red_id: 'Share Red ID', author_share: 'Author Share',
     share_id: 'Share ID', device_id: 'Device ID', file_id: 'File ID',
     content_id: 'Content ID', content_creator_id: 'Content Creator',
-    listened_songs: 'Listened Songs',
+    listened_songs: 'Listened Songs', share_type: 'Share Type',
+    start_time_ms: 'Start Ms', end_time_ms: 'End Ms',
+    tenant_id: 'Tenant ID', meeting_id: 'Meeting ID', host_count: 'Host Count',
+    organization_id: 'Organization ID', super_organizer: 'Super Organizer',
+    instagram: 'Instagram', twitter: 'Twitter', linkedin: 'LinkedIn',
+    website: 'Website', on_partiful: 'On Partiful', verified: 'Verified',
+    phone_number: 'Phone', account_id: 'Account ID', owner_id: 'Owner ID',
+    event_id: 'Event ID', booking_id: 'Booking ID', box_office: 'Box Office',
+    cashtag: 'Cashtag',
 };
 
 function fmtLabel(key) {
@@ -457,14 +533,8 @@ function fmtLabel(key) {
 function fmtValue(key, value) {
     if (typeof value === 'boolean') return value ? `${G}Yes${RST}` : `${R}No${RST}`;
     if (typeof value === 'number') return `${W}${value.toLocaleString()}${RST}`;
-    let s = String(value);
-    const MAX_VAL = 35;
-    if (s.startsWith('http')) {
-        if (s.length > MAX_VAL) s = s.substring(0, MAX_VAL - 3) + '...';
-        return `${C}${s}${RST}`;
-    }
-    if (s.length > MAX_VAL) s = s.substring(0, MAX_VAL - 3) + '...';
-    return `${W}${s}${RST}`;
+    const s = String(value);
+    return s.startsWith('http') ? `${C}${s}${RST}` : `${W}${s}${RST}`;
 }
 
 // ─── BANNER PREVIEWS ─────────────────────────────────────────────────────────
