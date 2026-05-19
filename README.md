@@ -4,62 +4,62 @@ Share Link Intelligence: reveal public account identifiers embedded in share, in
 
 When someone taps "Copy Link" or "Share", some platforms add sender tracking fields. Other public link types expose the account, host, organizer, booking owner, or clip creator tied to the copied link. OSAINT extracts only public identifiers from those links and rejects normal content URLs that do not expose a link-tied account.
 
-OSAINT currently includes **50 modules**. The full supported platform list is below.
+OSAINT currently includes **50 modules**. The full supported platform list is below, roughly ordered from most popular to least popular by parent platform reach and mainstream usage.
 
 ## Supported Platforms
 
 | Platform | What it reveals | How |
 |---|---|---|
-| **TikTok** | Username, name, avatar, followers, private status | `shareUser` data from mobile page render |
-| **Instagram** | Username, user ID, name, avatar | `igsh` parameter / embedded page JSON |
-| **Xiaohongshu** | Sharer user ID / share identity token | `appuid` / `shareRedId` parameters in app share URLs |
-| **Bilibili** | Sharer user ID / profile URL | `mid` / `share_mid` parameters in app share URLs |
-| **Baidu Pan** | Sharer user ID / profile URL | `uk` parameter in old Netdisk share URLs |
-| **NetEase Music** | Sharer user ID, name, avatar | `userid` parameter and public user API |
-| **Zhihu** | Legacy sharer profile slug | decoded `utm_member` parameter |
-| **Discord** | Username, user ID, avatar, account creation date | Public invite API |
-| **Claude** | Display name, user UUID | Chat snapshots API |
-| **Perplexity** | Username, avatar, user ID | Thread REST API |
-| **Microsoft** | Email address | Decoded from SharePoint URL path (offline) |
-| **Pinterest** | Username, user ID, name, avatar | Invite metadata API |
-| **Substack** | User ID, name, handle, bio, photo | Referral parameter in page preloads |
-| **Suno** | Username, name, avatar | Share code API |
-| **Spotify Wrapped** | Sender display name, sender image, share-card metadata | `shareData.sender_name` in public Wrapped share pages |
 | **YouTube Clips** | Clip creator display name, clip ID | `Clipped by` metadata on public clip pages |
-| **Google Photos** | Shared album owner Google account ID, name, avatar when exposed | `(Owner)` actor marker in public shared album page |
-| **Partiful** | Event host or owner user ID, name/avatar/socials when exposed | Public event invite page data |
-| **Lu.ma** | Event host user ID, name, avatar, socials | Public event page data |
-| **Eventbrite** | Organizer name, profile, and account ID when exposed | JSON-LD or public event page data |
-| **Microsoft Teams** | Organizer user object ID, tenant ID | Embedded `context` parameter in meeting invite URLs |
 | **WhatsApp** | Phone/account ID | `wa.me` / click-to-chat link path |
-| **QQ Contact** | QQ account number | `uin` parameter in WPA links |
-| **Steam Trade** | Steam account ID, SteamID64, trade token | `partner` / `token` parameters in user-created trade URLs |
+| **Instagram** | Username, user ID, name, avatar | `igsh` parameter / embedded page JSON |
+| **TikTok** | Username, name, avatar, followers, private status | `shareUser` data from mobile page render |
+| **Telegram** | Creator user ID | Base64 decoded from joinchat hash (offline) |
+| **Spotify Wrapped** | Sender display name, sender image, share-card metadata | `shareData.sender_name` in public Wrapped share pages |
+| **Reddit** | Sharer username, subreddit, post ID | Mobile share link redirect |
+| **Discord** | Username, user ID, avatar, account creation date | Public invite API |
+| **Pinterest** | Username, user ID, name, avatar | Invite metadata API |
+| **Twitch** | Clip creator username, user ID, channel | Twitch GQL API |
+| **Google Photos** | Shared album owner Google account ID, name, avatar when exposed | `(Owner)` actor marker in public shared album page |
+| **Microsoft Teams** | Organizer user object ID, tenant ID | Embedded `context` parameter in meeting invite URLs |
+| **Microsoft** | Email address | Decoded from SharePoint URL path (offline) |
 | **OneDrive Personal** | Owner CID / account container ID | `cid` / `resid` parameters in personal OneDrive links |
+| **Baidu Pan** | Sharer user ID / profile URL | `uk` parameter in old Netdisk share URLs |
+| **Bilibili** | Sharer user ID / profile URL | `mid` / `share_mid` parameters in app share URLs |
+| **Xiaohongshu** | Sharer user ID / share identity token | `appuid` / `shareRedId` parameters in app share URLs |
+| **NetEase Music** | Sharer user ID, name, avatar | `userid` parameter and public user API |
+| **Steam Trade** | Steam account ID, SteamID64, trade token | `partner` / `token` parameters in user-created trade URLs |
+| **PayPal.Me** | Payment profile handle, display metadata when public | Profile path and public page metadata |
 | **Cash App** | Cashtag / payment profile | `$cashtag` path |
 | **Venmo** | Username or user ID | `/u/{username}` and QR `user_id` links |
-| **PayPal.Me** | Payment profile handle, display metadata when public | Profile path and public page metadata |
-| **Ko-fi** | Creator handle, display name/avatar when public | Profile path and public page metadata |
-| **Buy Me a Coffee** | Creator handle, display name/avatar when public | Profile path and public page metadata |
-| **Patreon** | Creator handle, display metadata when public | Creator profile path and public metadata |
 | **Linktree** | Profile handle, display metadata when public | Profile path and public metadata |
-| **Beacons** | Profile handle, display metadata when public | Profile path and public metadata |
+| **Patreon** | Creator handle, display metadata when public | Creator profile path and public metadata |
+| **Substack** | User ID, name, handle, bio, photo | Referral parameter in page preloads |
+| **Zhihu** | Legacy sharer profile slug | decoded `utm_member` parameter |
+| **Claude** | Display name, user UUID | Chat snapshots API |
+| **Perplexity** | Username, avatar, user ID | Thread REST API |
+| **Suno** | Username, name, avatar | Share code API |
+| **Loom** | Recording owner user ID, name, avatar | Apollo page state |
+| **Medal.tv** | Clip recorder/poster user ID, name, avatar | JSON-LD and page payload |
+| **Eventbrite** | Organizer name, profile, and account ID when exposed | JSON-LD or public event page data |
+| **Meetup** | Group/organizer slug, event ID, host metadata | Event URL path and JSON-LD |
 | **Calendly** | Booking owner slug, display metadata when public | Scheduling link path and page metadata |
 | **Cal.com** | Booking owner username, name, avatar | Public OG image params and page metadata |
+| **Lu.ma** | Event host user ID, name, avatar, socials | Public event page data |
+| **Partiful** | Event host or owner user ID, name/avatar/socials when exposed | Public event invite page data |
+| **Beacons** | Profile handle, display metadata when public | Profile path and public metadata |
+| **Ko-fi** | Creator handle, display name/avatar when public | Profile path and public page metadata |
+| **Buy Me a Coffee** | Creator handle, display name/avatar when public | Profile path and public page metadata |
+| **QQ Contact** | QQ account number | `uin` parameter in WPA links |
 | **TidyCal** | Booking owner slug/name | Booking link path and title metadata |
 | **YouCanBookMe** | Booking owner subdomain | Booking-page subdomain and page metadata |
 | **SavvyCal** | Booking owner slug, display metadata when public | Booking link path and page metadata |
 | **Acuity Scheduling** | Owner account ID | `owner` parameter in schedule links |
 | **Ticket Tailor** | Box-office owner slug, event ID | Event URL path |
 | **Humanitix** | Event host/organizer name when public | JSON-LD public event page data |
-| **Meetup** | Group/organizer slug, event ID, host metadata | Event URL path and JSON-LD |
-| **TicketLeap** | Organizer slug, event ID | Event URL path |
 | **Eventzilla** | Organizer name/profile when public | JSON-LD public event page data |
+| **TicketLeap** | Organizer slug, event ID | Event URL path |
 | **Universe** | Organizer name/profile when public | JSON-LD / public event page data |
-| **Loom** | Recording owner user ID, name, avatar | Apollo page state |
-| **Medal.tv** | Clip recorder/poster user ID, name, avatar | JSON-LD and page payload |
-| **Telegram** | Creator user ID | Base64 decoded from joinchat hash (offline) |
-| **Twitch** | Clip creator username, user ID, channel | Twitch GQL API |
-| **Reddit** | Sharer username, subreddit, post ID | Mobile share link redirect |
 
 ## Requirements
 
