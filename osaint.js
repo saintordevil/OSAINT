@@ -6,7 +6,7 @@
 import { printBanner, printTargetBox, printResults, printError, printPlatformList, printHelp, printCommands, printHowTo, displayName } from './src/banner.js';
 import { getSpinner, runStep, resetSteps } from './src/spinner.js';
 import { detectPlatform, listPlatforms, loadParser } from './src/router.js';
-import { C, G, R, DG, DIM, W, RST, SHOW } from './src/colors.js';
+import { C, G, R, DG, DIM, W, RST } from './src/colors.js';
 
 // ─── ARGS ────────────────────────────────────────────────────────────────────
 
@@ -33,7 +33,6 @@ const url = args.find(a => !a.startsWith('-'));
 function cleanup() {
     const s = getSpinner();
     s.stop();
-    process.stdout.write(SHOW);
 }
 
 function printJson(payload) {

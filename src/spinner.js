@@ -1,5 +1,6 @@
+import { createLogUpdate } from 'log-update';
 import { getSelectedAnimations } from './animations.js';
-import { C, G, R, DG, W, DIM, RST, CLR, HIDE, SHOW } from './colors.js';
+import { C, R, DG, W, DIM, RST, stripAnsi } from './colors.js';
 
 const MIN_DISPLAY_MS = 1200;
 
@@ -8,126 +9,154 @@ const MIN_DISPLAY_MS = 1200;
 //   loading = active work (configurable, default: scan)
 //   idle    = completed / done lines (configurable, default: rain)
 //
-// How it works: completed steps are tracked in _lines[]. On every frame,
-// we cursor-up to the first tracked line, redraw all of them with the current
-// idle frame, then redraw the active line at the bottom with the loading anim.
+// A single managed live region contains completed rows and one active bottom
+// row. log-update owns terminal wrapping and cursor restoration.
 
 export class Spinner {
-    constructor() {
+    constructor({
+        stream = process.stdout,
+        renderer = null,
+        loadingAnimation = null,
+        idleAnimation = null,
+        setIntervalFn = setInterval,
+        clearIntervalFn = clearInterval,
+    } = {}) {
+        this._stream = stream;
+        this._isTTY = Boolean(stream.isTTY);
+        this._setInterval = setIntervalFn;
+        this._clearInterval = clearIntervalFn;
         this._timer = null;
         this._fi = 0;
         this._msg = '';
         this._running = false;
         this._mode = 'scan';
-        this._lines = [];       // {text, isError} - completed step lines
-        this._linesOnScreen = 0; // how many lines are currently rendered
+        this._lines = [];
 
-        // Load configured animations
-        const sel = getSelectedAnimations();
-        this._loadingAnim = sel.loading;
-        this._idleAnim    = sel.idle;
+        if (!loadingAnimation || !idleAnimation) {
+            const selected = getSelectedAnimations();
+            loadingAnimation ||= selected.loading;
+            idleAnimation ||= selected.idle;
+        }
+        this._loadingAnim = loadingAnimation;
+        this._idleAnim = idleAnimation;
+        this._renderer = renderer || (
+            this._isTTY ? createLogUpdate(this._stream, { showCursor: false }) : null
+        );
     }
 
     // Start spinner with a loading message
     loading(msg) {
         this._msg = msg;
         this._mode = 'scan';
-        if (!this._running) {
-            this._running = true;
-            this._fi = 0;
-            this._linesOnScreen = 0;
-            process.stdout.write(HIDE);
-        }
-        this._restartTimer();
+        this._start();
+        this._draw();
     }
 
     // Switch to idle rain animation
     idle(msg) {
         this._msg = msg || '';
         this._mode = 'rain';
-        if (!this._running) {
-            this._running = true;
-            this._fi = 0;
-            process.stdout.write(HIDE);
-        }
-        this._restartTimer();
+        this._start();
+        this._draw();
     }
 
     // Mark current step as done, track it for rain animation
     done(msg) {
-        this._lines.push({ text: msg, isError: false });
-        // Print new completed line - push active line down
-        this._clearTimer();
-        process.stdout.write(`\r${CLR}\n`); // blank line for new active position
-        this._linesOnScreen = this._lines.length;
-        this._restartTimer();
+        const line = { text: msg, isError: false };
+        this._lines.push(line);
+        this._msg = '';
+        if (this._isTTY) this._draw();
+        else this._writeStatic(line);
     }
 
     // Mark current step as failed
     fail(msg, detail) {
         const text = detail ? `${msg} ${DG}:: ${DIM}${W}${detail}${RST}` : msg;
-        this._lines.push({ text, isError: true });
-        this._clearTimer();
-        process.stdout.write(`\r${CLR}\n`);
-        this._linesOnScreen = this._lines.length;
-        this._restartTimer();
+        const line = { text, isError: true };
+        this._lines.push(line);
+        this._msg = '';
+        if (this._isTTY) this._draw();
+        else this._writeStatic(line);
     }
 
-    update(msg) { this._msg = msg; }
+    update(msg) {
+        this._msg = msg;
+        this._draw();
+    }
 
     // Stop all animation and show cursor
     stop() {
         if (!this._running) return;
         this._running = false;
         this._clearTimer();
-        process.stdout.write(`\r${CLR}${SHOW}`);
+        if (this._isTTY && this._renderer) {
+            this._draw();
+            this._renderer.done();
+        }
     }
 
     // Reset tracked lines for a new analysis
     reset() {
+        const wasRunning = this._running;
+        this._running = false;
+        this._clearTimer();
+        if (wasRunning && this._isTTY && this._renderer) {
+            this._renderer.clear();
+            this._renderer.done();
+        }
         this._lines = [];
-        this._linesOnScreen = 0;
+        this._msg = '';
+        this._mode = 'scan';
+        this._fi = 0;
     }
 
     _clearTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        if (this._timer) {
+            this._clearInterval(this._timer);
+            this._timer = null;
+        }
     }
 
-    _restartTimer() {
-        this._clearTimer();
-        // Use the faster of the two animation intervals for smooth rendering
+    _start() {
+        if (!this._running) {
+            this._running = true;
+            this._fi = 0;
+        }
+        if (!this._isTTY || this._timer) return;
         const tick = Math.min(this._loadingAnim.interval, this._idleAnim.interval);
-        this._timer = setInterval(() => this._draw(), tick);
+        this._timer = this._setInterval(() => this._draw(), tick);
     }
 
     _draw() {
+        if (!this._isTTY || !this._renderer) return;
         const idleFrames    = this._idleAnim.frames;
         const loadingFrames = this._loadingAnim.frames;
         const rf = idleFrames[this._fi % idleFrames.length];
         const sf = loadingFrames[this._fi % loadingFrames.length];
+        const rows = [];
 
-        // Move cursor up to redraw all tracked lines + active line
-        const upCount = this._linesOnScreen; // lines above the active line
-        if (upCount > 0) {
-            process.stdout.write(`\x1b[${upCount}A`);
-        }
-
-        // Redraw all completed lines with rain
         for (const ln of this._lines) {
             const color = ln.isError ? R : C;
             const textColor = ln.isError ? R : W;
-            process.stdout.write(`\r${CLR}   ${color}${rf}${RST}  ${textColor}${ln.text}${RST}\n`);
+            rows.push(`   ${color}${rf}${RST}  ${textColor}${ln.text}${RST}`);
         }
 
-        // Redraw active line
         if (this._msg) {
             const frame = this._mode === 'scan' ? sf : rf;
-            process.stdout.write(`\r${CLR}   ${C}${frame}${RST}  ${DIM}${W}${this._msg}${RST}`);
-        } else {
-            process.stdout.write(`\r${CLR}`);
+            rows.push(`   ${C}${frame}${RST}  ${DIM}${W}${this._msg}${RST}`);
         }
 
+        if (rows.length) this._renderer(rows.join('\n'));
+        else this._renderer.clear();
         this._fi++;
+    }
+
+    _writeStatic(line) {
+        const frame = this._idleAnim.frames[0];
+        const color = line.isError ? R : C;
+        const textColor = line.isError ? R : W;
+        const output = `   ${color}${frame}${RST}  ${textColor}${line.text}${RST}`;
+        this._stream.write(`${stripAnsi(output)}\n`);
     }
 }
 
