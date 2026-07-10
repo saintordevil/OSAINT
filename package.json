@@ -9,7 +9,9 @@
   "type": "module",
   "scripts": {
     "start": "node osaint.js",
-    "test": "node osaint.js --test"
+    "test": "npm run test:spinner && npm run test:self",
+    "test:self": "node osaint.js --test",
+    "test:spinner": "node --test test/spinner.test.js"
   },
   "keywords": [
     "osint",
@@ -20,6 +22,7 @@
   "author": "OSAINT",
   "license": "MIT",
   "dependencies": {
+    "log-update": "6.1.0",
     "node-tls-client": "^2.1.0",
     "unicode-animations": "^1.0.3"
   }

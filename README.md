@@ -156,6 +156,7 @@ Different platforms expose link-tied account data in different ways. These are t
 
 - Uses `node-tls-client` for Chrome TLS fingerprint impersonation to bypass CloudFlare and bot detection
 - Mobile Android User-Agent for TikTok, required because TikTok only serves sharer data to mobile browsers
+- Managed real-time terminal region keeps completed steps stable and the active operation on the bottom row
 - 52 customizable spinner animations sourced from `unicode-animations` and `rattles` (braille grids, ASCII spinners, braille patterns)
 - 13 swappable ASCII art banner styles
 - All settings persist to `.osaint-config.json`
