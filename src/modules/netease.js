@@ -1,6 +1,8 @@
 // NetEase Cloud Music share link metadata reader
 // App share URLs can include userid, which maps to the sharing account.
 
+import { fetchHtml, normalizeUrl } from './_helpers.js';
+
 const HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     'Accept': 'application/json,text/html',
@@ -12,13 +14,8 @@ function isNeteaseHost(hostname) {
 }
 
 function parseUrl(rawUrl) {
-    let parsed;
-    try {
-        parsed = new URL(rawUrl);
-    } catch {
-        parsed = new URL(rawUrl, 'https://music.163.com');
-    }
-
+    const parsed = normalizeUrl(rawUrl, 'https://music.163.com');
+    if (!parsed) return null;
     if (!isNeteaseHost(parsed.hostname.toLowerCase())) return null;
     return parsed;
 }
@@ -47,14 +44,21 @@ function getParam(params, key) {
     return params.get(key.toLowerCase()) || null;
 }
 
+function contentRoute(parsed) {
+    const direct = parsed.pathname.match(/^\/(?:m\/)?(song|playlist|album|program|djradio|mv)(?:\/([1-9]\d*))?\/?$/i);
+    if (direct) return { type: direct[1].toLowerCase(), pathId: direct[2] || null };
+
+    const hashPath = parsed.hash.replace(/^#\/?/, '').split('?', 1)[0];
+    const hash = hashPath.match(/^(song|playlist|album|program|djradio|mv)(?:\/([1-9]\d*))?\/?$/i);
+    return hash ? { type: hash[1].toLowerCase(), pathId: hash[2] || null } : null;
+}
+
 async function fetchProfile(userId) {
     try {
-        const res = await fetch(`https://music.163.com/api/v1/user/detail/${encodeURIComponent(userId)}`, {
-            headers: HEADERS,
-        });
-        if (!res.ok) return {};
+        const { error, html } = await fetchHtml(`https://music.163.com/api/v1/user/detail/${encodeURIComponent(userId)}`, HEADERS);
+        if (error) return {};
 
-        const body = await res.json();
+        const body = JSON.parse(html);
         const profile = body.profile || {};
         const data = {};
 
@@ -80,17 +84,19 @@ export default async function netease(url) {
 
         const params = collectParams(parsed);
         const userId = getParam(params, 'userid');
+        const route = contentRoute(parsed);
+        const contentId = getParam(params, 'id') || route?.pathId;
 
-        if (!userId || !/^\d+$/.test(userId)) {
-            return { error: 'NetEase URL does not include a sharer userid' };
+        if (!route || !/^[1-9]\d*$/.test(userId || '') || !/^[1-9]\d*$/.test(contentId || '')) {
+            return { error: 'NetEase URL is not a supported content share with userid and content ID' };
         }
 
         const data = {
             user_id: userId,
             profile_url: `https://music.163.com/#/user/home?id=${userId}`,
+            identity_confidence: 'unsigned_url_claim',
         };
 
-        const contentId = getParam(params, 'id');
         if (contentId) data.content_id = contentId;
 
         const creatorId = getParam(params, 'creatorId');

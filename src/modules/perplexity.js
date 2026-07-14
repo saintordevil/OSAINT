@@ -2,27 +2,20 @@
 // Uses node-tls-client to bypass CloudFlare TLS fingerprinting
 // Extracts thread author info from the REST API
 
-import { fetch as tlsFetch, initTLS } from 'node-tls-client';
-
-let _tlsReady = false;
-
-async function ensureTLS() {
-    if (!_tlsReady) {
-        await initTLS();
-        _tlsReady = true;
-    }
-}
+import { tlsFetch } from './_tls.js';
+import { normalizeUrl } from './_helpers.js';
 
 export default async function perplexity(url) {
     try {
-        const match = url.match(/perplexity\.ai\/search\/([\w-]+)/i);
+        const parsed = normalizeUrl(url, 'https://www.perplexity.ai');
+        const host = parsed?.hostname.toLowerCase();
+        const match = ['perplexity.ai', 'www.perplexity.ai'].includes(host)
+            ? parsed.pathname.match(/^\/search\/([\w-]+)\/?$/i)
+            : null;
         if (!match) return { error: 'Invalid Perplexity search URL' };
 
         const slug = match[1];
-        await ensureTLS();
-
         const res = await tlsFetch(`https://www.perplexity.ai/rest/thread/${slug}`, {
-            clientIdentifier: 'chrome_131',
             headers: {
                 'Accept': 'application/json',
                 'Accept-Language': 'en-US,en;q=0.9',

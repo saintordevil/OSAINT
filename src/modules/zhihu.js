@@ -11,6 +11,7 @@ function parseUrl(rawUrl) {
 
     const host = parsed.hostname.toLowerCase();
     if (host !== 'zhihu.com' && !host.endsWith('.zhihu.com')) return null;
+    if (!/^\/(?:question\/\d+|answer\/\d+|p\/\d+|zvideo\/\d+)(?:[/?]|$)/i.test(parsed.pathname)) return null;
     return parsed;
 }
 
@@ -45,6 +46,7 @@ export default async function zhihu(url) {
                 user_id: member,
                 profile_url: `https://www.zhihu.com/people/${member}`,
                 share_method: 'legacy utm_member',
+                identity_confidence: 'unsigned_url_claim',
             },
         };
     } catch (err) {

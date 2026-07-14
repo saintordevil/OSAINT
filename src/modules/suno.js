@@ -2,33 +2,30 @@
 // Uses the public share API with a browser token
 // Falls back to TLS-impersonated page fetch for OG metadata
 
-import { fetch as tlsFetch, initTLS } from 'node-tls-client';
-
-let _tlsReady = false;
-async function ensureTLS() {
-    if (!_tlsReady) { await initTLS(); _tlsReady = true; }
-}
+import { createTlsDeadline, tlsFetch } from './_tls.js';
+import { normalizeUrl } from './_helpers.js';
 
 export default async function suno(url) {
     try {
-        const match = url.match(/suno\.com\/s\/([\w-]+)/i);
+        const parsed = normalizeUrl(url, 'https://suno.com');
+        const host = parsed?.hostname.toLowerCase();
+        const match = ['suno.com', 'www.suno.com'].includes(host) ? parsed.pathname.match(/^\/s\/([\w-]+)\/?$/i) : null;
         if (!match) return { error: 'Invalid Suno share URL' };
 
         const shareCode = match[1];
-        await ensureTLS();
-
+        const remainingTimeout = createTlsDeadline();
         // Try the share API with browser token
         const ts = Date.now();
         const innerToken = Buffer.from(JSON.stringify({ timestamp: ts })).toString('base64');
         const browserToken = Buffer.from(JSON.stringify({ token: innerToken })).toString('base64');
 
         const apiRes = await tlsFetch(`https://studio-api.prod.suno.com/api/share/code/${shareCode}`, {
-            clientIdentifier: 'chrome_131',
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'application/json',
                 'browser-token': browserToken,
-            }
+            },
+            timeoutMs: remainingTimeout(),
         });
 
         if (apiRes.ok) {
@@ -47,11 +44,11 @@ export default async function suno(url) {
 
         // Fallback: fetch the share page and check OG tags / embedded data
         const pageRes = await tlsFetch(`https://suno.com/s/${shareCode}`, {
-            clientIdentifier: 'chrome_131',
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'text/html',
-            }
+            },
+            timeoutMs: remainingTimeout(),
         });
 
         if (pageRes.ok) {

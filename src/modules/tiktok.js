@@ -3,20 +3,50 @@
 // Key: TikTok only embeds sharer identity for mobile user agents, not desktop
 
 import { COUNTRY_CODES } from '../utils.js';
-import { fetch as tlsFetch, initTLS } from 'node-tls-client';
+import { extractJsonObjects, normalizeUrl } from './_helpers.js';
+import { createTlsDeadline, getHeader, tlsFetch } from './_tls.js';
 
-let _tlsReady = false;
-async function ensureTLS() {
-    if (!_tlsReady) { await initTLS(); _tlsReady = true; }
+const TIKTOK_HOSTS = new Set([
+    'tiktok.com',
+    'www.tiktok.com',
+    'm.tiktok.com',
+    'vm.tiktok.com',
+    'vt.tiktok.com',
+]);
+const MAX_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+function parseTikTokUrl(value) {
+    const parsed = normalizeUrl(value, 'https://www.tiktok.com');
+    if (!parsed) throw new Error('Invalid TikTok share URL');
+    if (parsed.protocol !== 'https:' || !TIKTOK_HOSTS.has(parsed.hostname.toLowerCase())) {
+        throw new Error('Invalid TikTok share URL');
+    }
+    return parsed;
+}
+
+export function selectTikTokShareUser(html) {
+    const envelope = extractJsonObjects(html, 'webapp.reflow.global.shareUser')[0];
+    const statusCode = Number(envelope?.statusCode);
+    const candidates = [envelope?.shareUser, envelope?.user, envelope];
+    const user = candidates.find(candidate => candidate && typeof candidate === 'object' &&
+        (candidate.uniqueId || candidate.id || candidate.nickname));
+    return { envelope, statusCode, user };
 }
 
 export default async function tiktok(url) {
     try {
-        if (!/(?:vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t)\//i.test(url)) {
+        let initialUrl;
+        try {
+            initialUrl = parseTikTokUrl(url);
+        } catch {
             return { error: 'Invalid TikTok share URL' };
         }
 
-        await ensureTLS();
+        const isShortHost = ['vm.tiktok.com', 'vt.tiktok.com'].includes(initialUrl.hostname.toLowerCase());
+        if (!isShortHost && !initialUrl.pathname.startsWith('/t/')) {
+            return { error: 'Invalid TikTok share URL' };
+        }
 
         // MUST use mobile UA - TikTok only embeds shareUser data for mobile user agents
         const headers = {
@@ -26,21 +56,28 @@ export default async function tiktok(url) {
         };
 
         // ── Step 1: Follow redirect to get tracking params ───────────────
-        let finalUrl = url;
+        let finalUrl = initialUrl.href;
         let html = '';
-        let hops = 0;
-        while (hops < 5) {
+        const remainingTimeout = createTlsDeadline();
+        for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
             const res = await tlsFetch(finalUrl, {
-                clientIdentifier: 'chrome_131',
                 followRedirects: false,
                 headers,
+                timeoutMs: remainingTimeout(),
             });
 
-            if (res.status >= 300 && res.status < 400) {
-                const loc = res.headers?.Location?.[0] || res.headers?.location?.[0];
+            if (REDIRECT_STATUSES.has(res.status)) {
+                const loc = getHeader(res.headers, 'location');
                 if (!loc) break;
-                finalUrl = loc.startsWith('http') ? loc : `https://www.tiktok.com${loc}`;
-                hops++;
+                if (redirects === MAX_REDIRECTS) {
+                    return { error: `TikTok redirect limit exceeded (${MAX_REDIRECTS})` };
+                }
+
+                try {
+                    finalUrl = parseTikTokUrl(new URL(loc, finalUrl).href).href;
+                } catch {
+                    return { error: 'TikTok redirected to an unexpected host' };
+                }
                 continue;
             }
 
@@ -78,36 +115,24 @@ export default async function tiktok(url) {
         // ── Step 3: Extract sharer profile from shareUser in page HTML ──
         // TikTok embeds the sharer's full profile in webapp.reflow.global.shareUser (mobile UA only)
         // Search for shareUser section and check statusCode
-        const statusMatch = html.match(/"webapp\.reflow\.global\.shareUser"\s*:\s*\{[^]*?"statusCode"\s*:\s*(\d+)/);
-        if (statusMatch) {
-            const statusCode = parseInt(statusMatch[1]);
+        const { statusCode, user } = selectTikTokShareUser(html);
+        if (Number.isFinite(statusCode)) {
 
             if (statusCode === 0) {
                 data.profile_sharing = 'Enabled';
-                // Extract the shareUser profile object
-                try {
-                    const shareBlock = html.match(/"shareUser"\s*:\s*\{[^}]+\}/);
-                    if (shareBlock) {
-                        const cleaned = shareBlock[0].replace(/\\u002F/g, '/');
-                        const jsonStr = cleaned.match(/"shareUser"\s*:\s*(\{[^}]+\})/);
-                        if (jsonStr) {
-                            const user = JSON.parse(jsonStr[1]);
-                            if (user.uniqueId) {
-                                data.username = user.uniqueId;
-                                data.profile_url = `https://www.tiktok.com/@${user.uniqueId}`;
-                            }
-                            if (user.id) data.user_id = user.id;
-                            if (user.nickname) data.name = user.nickname;
-                            if (user.avatarLarger) data.avatar_url = user.avatarLarger.replace(/\\u002F/g, '/');
-                            if (user.signature) data.signature = user.signature;
-                            if (user.followerCount !== undefined) data.follower_count = user.followerCount;
-                            if (user.followingCount !== undefined) data.following_count = user.followingCount;
-                            if (user.videoCount !== undefined) data.video_count = user.videoCount;
-                            if (user.heartCount !== undefined) data.heart_count = user.heartCount;
-                            if (user.privateAccount !== undefined) data.private_account = user.privateAccount;
-                        }
-                    }
-                } catch { /* JSON parse failed */ }
+                if (user?.uniqueId) {
+                    data.username = user.uniqueId;
+                    data.profile_url = `https://www.tiktok.com/@${user.uniqueId}`;
+                }
+                if (user?.id) data.user_id = user.id;
+                if (user?.nickname) data.name = user.nickname;
+                if (user?.avatarLarger) data.avatar_url = user.avatarLarger.replace(/\\u002F/g, '/');
+                if (user?.signature) data.signature = user.signature;
+                if (user?.followerCount !== undefined) data.follower_count = user.followerCount;
+                if (user?.followingCount !== undefined) data.following_count = user.followingCount;
+                if (user?.videoCount !== undefined) data.video_count = user.videoCount;
+                if (user?.heartCount !== undefined) data.heart_count = user.heartCount;
+                if (user?.privateAccount !== undefined) data.private_account = user.privateAccount;
             } else {
                 data.profile_sharing = 'Disabled';
             }
@@ -120,8 +145,8 @@ export default async function tiktok(url) {
             data.country = COUNTRY_CODES[code] || code;
         }
 
-        if (Object.keys(data).length === 0) {
-            return { error: 'Could not extract any metadata from this TikTok link' };
+        if (!['user_id', 'username', 'name', 'profile_url'].some(field => data[field])) {
+            return { error: 'TikTok did not expose a sharer identity for this link' };
         }
 
         return { data };

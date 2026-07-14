@@ -14,7 +14,7 @@ export default async function acuity(url) {
             return { error: 'Acuity URL does not include an owner account ID' };
         }
 
-        const data = { user_id: owner, owner_id: owner, profile_url: parsed.toString(), share_type: 'booking-link' };
+        const data = { user_id: owner, owner_id: owner, share_url: parsed.toString(), share_type: 'booking-link' };
         const { html } = await fetchHtml(parsed).catch(() => ({}));
         if (html) {
             data.name = extractMeta(html, 'og:title') || extractTitle(html);

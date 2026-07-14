@@ -2,23 +2,27 @@
 // Extracts the referring user from embedded page preloads
 // Uses node-tls-client for TLS fingerprint impersonation
 
-import { fetch as tlsFetch, initTLS } from 'node-tls-client';
+import { tlsFetch } from './_tls.js';
+import { normalizeUrl } from './_helpers.js';
 
-let _tlsReady = false;
-async function ensureTLS() {
-    if (!_tlsReady) { await initTLS(); _tlsReady = true; }
+function isSubstackHost(hostname) {
+    const host = hostname.toLowerCase();
+    return host === 'substack.com' || host.endsWith('.substack.com');
 }
 
 export default async function substack(url) {
     try {
-        if (!url.includes('?r=') && !url.includes('&r=')) {
+        const parsedUrl = normalizeUrl(url, 'https://substack.com');
+
+        if (!parsedUrl || !isSubstackHost(parsedUrl.hostname)) {
+            return { error: 'Invalid Substack referral URL' };
+        }
+
+        if (!parsedUrl.searchParams.has('r')) {
             return { error: 'URL does not contain a referral parameter (?r=)' };
         }
 
-        await ensureTLS();
-
-        const res = await tlsFetch(url, {
-            clientIdentifier: 'chrome_131',
+        const res = await tlsFetch(parsedUrl.href, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml',

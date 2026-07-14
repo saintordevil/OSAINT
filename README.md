@@ -1,72 +1,98 @@
 # OSAINT
 
-Share Link Intelligence: reveal public account identifiers embedded in share, invite, profile, and booking links across 50 supported modules.
+OSAINT is a command-line link-attribution tool for public share, invite, profile, booking, event, and clip URLs. It extracts identifiers exposed by a supported link and labels the relationship between that identity and the link.
 
-When someone taps "Copy Link" or "Share", some platforms add sender tracking fields. Other public link types expose the account, host, organizer, booking owner, or clip creator tied to the copied link. OSAINT extracts only public identifiers from those links and rejects normal content URLs that do not expose a link-tied account.
+The distinction matters. A result can describe the actual sharer, a referral account, an invite creator, a clip creator, a content owner, an event host, or the target of a profile link. OSAINT reports this as `identity_role` and reserves `actual_sharer` for formats with a proven sender-attribution field. `is_sharer_identity` is `true` for sharer and referral semantics, and `false` for contextual identities such as owners, organizers, targets, and artifact creators.
 
-OSAINT currently includes **50 modules**. The full supported platform list is below, roughly ordered from most popular to least popular by parent platform reach and mainstream usage.
+A URL is evidence of what it encodes, not proof that the URL is authentic. Query parameters and path IDs can be edited manually. Preserve the original source and corroborate important identity conclusions independently.
 
-## Supported Platforms
+## What changed in 2.0.0
 
-| Platform | What it reveals | How |
+- Added Stack Exchange built-in `/q/{post}/{user}` and `/a/{post}/{user}` share links. Stack Exchange appends the clicking account's ID when it builds this URL, but the unsigned path remains editable, so OSAINT labels it `referral_account` rather than proof of the sender. Public API enrichment is optional.
+- Corrected YouTube output to identify the legacy Clip creator, not a later person who forwarded the URL. Ordinary Watch, Shorts, and `si` links remain unsupported.
+- Removed Telegram invite hashes from routing. Current invite hashes are opaque and cannot be decoded safely into a public creator ID.
+- Added explicit attribution roles across all modules.
+- Hardened URL parsing against lookalike hosts, embedded URLs, credentials, unsafe redirects, unbounded downloads, and stalled requests.
+- Removed cosmetic delays from non-interactive and JSON runs, and ensured TLS workers shut down after every command.
+- Expanded regression tests for routing, parsers, terminal safety, redirect handling, exit codes, and attribution semantics.
+
+### 2.0 migration notes
+
+- Results now include `identity_role` and `is_sharer_identity`, so integrations can distinguish sharer/referral signals from contextual accounts.
+- Input artifact links previously mislabeled as `profile_url` now use `share_url`. A returned `profile_url` points to an identity profile.
+- Microsoft SharePoint output now preserves `site_slug` and labels the derived address as `email_candidate`; it no longer presents the heuristic as a verified email.
+- Telegram invite hashes are no longer routed because current hashes are opaque.
+- These schema and routing corrections are why this release uses a major version.
+
+## Supported modules
+
+OSAINT includes 50 routed modules. “Role” is the meaning of the identity returned, not a guarantee that every live page will expose every optional field.
+
+| Platform | Role | Public signal |
 |---|---|---|
-| **YouTube Clips** | Clip creator display name, clip ID | `Clipped by` metadata on public clip pages |
-| **WhatsApp** | Phone/account ID | `wa.me` / click-to-chat link path |
-| **Instagram** | Username, user ID, name, avatar | `igsh` parameter / embedded page JSON |
-| **TikTok** | Username, name, avatar, followers, private status | `shareUser` data from mobile page render |
-| **Telegram** | Creator user ID | Base64 decoded from joinchat hash (offline) |
-| **Spotify Wrapped** | Sender display name, sender image, share-card metadata | `shareData.sender_name` in public Wrapped share pages |
-| **Reddit** | Sharer username, subreddit, post ID | Mobile share link redirect |
-| **Discord** | Username, user ID, avatar, account creation date | Public invite API |
-| **Pinterest** | Username, user ID, name, avatar | Invite metadata API |
-| **Twitch** | Clip creator username, user ID, channel | Twitch GQL API |
-| **Google Photos** | Shared album owner Google account ID, name, avatar when exposed | `(Owner)` actor marker in public shared album page |
-| **Microsoft Teams** | Organizer user object ID, tenant ID | Embedded `context` parameter in meeting invite URLs |
-| **Microsoft** | Email address | Decoded from SharePoint URL path (offline) |
-| **OneDrive Personal** | Owner CID / account container ID | `cid` / `resid` parameters in personal OneDrive links |
-| **Baidu Pan** | Sharer user ID / profile URL | `uk` parameter in old Netdisk share URLs |
-| **Bilibili** | Sharer user ID / profile URL | `mid` / `share_mid` parameters in app share URLs |
-| **Xiaohongshu** | Sharer user ID / share identity token | `appuid` / `shareRedId` parameters in app share URLs |
-| **NetEase Music** | Sharer user ID, name, avatar | `userid` parameter and public user API |
-| **Steam Trade** | Steam account ID, SteamID64, trade token | `partner` / `token` parameters in user-created trade URLs |
-| **PayPal.Me** | Payment profile handle, display metadata when public | Profile path and public page metadata |
-| **Cash App** | Cashtag / payment profile | `$cashtag` path |
-| **Venmo** | Username or user ID | `/u/{username}` and QR `user_id` links |
-| **Linktree** | Profile handle, display metadata when public | Profile path and public metadata |
-| **Patreon** | Creator handle, display metadata when public | Creator profile path and public metadata |
-| **Substack** | User ID, name, handle, bio, photo | Referral parameter in page preloads |
-| **Zhihu** | Legacy sharer profile slug | decoded `utm_member` parameter |
-| **Claude** | Display name, user UUID | Chat snapshots API |
-| **Perplexity** | Username, avatar, user ID | Thread REST API |
-| **Suno** | Username, name, avatar | Share code API |
-| **Loom** | Recording owner user ID, name, avatar | Apollo page state |
-| **Medal.tv** | Clip recorder/poster user ID, name, avatar | JSON-LD and page payload |
-| **Eventbrite** | Organizer name, profile, and account ID when exposed | JSON-LD or public event page data |
-| **Meetup** | Group/organizer slug, event ID, host metadata | Event URL path and JSON-LD |
-| **Calendly** | Booking owner slug, display metadata when public | Scheduling link path and page metadata |
-| **Cal.com** | Booking owner username, name, avatar | Public OG image params and page metadata |
-| **Lu.ma** | Event host user ID, name, avatar, socials | Public event page data |
-| **Partiful** | Event host or owner user ID, name/avatar/socials when exposed | Public event invite page data |
-| **Beacons** | Profile handle, display metadata when public | Profile path and public metadata |
-| **Ko-fi** | Creator handle, display name/avatar when public | Profile path and public page metadata |
-| **Buy Me a Coffee** | Creator handle, display name/avatar when public | Profile path and public page metadata |
-| **QQ Contact** | QQ account number | `uin` parameter in WPA links |
-| **TidyCal** | Booking owner slug/name | Booking link path and title metadata |
-| **YouCanBookMe** | Booking owner subdomain | Booking-page subdomain and page metadata |
-| **SavvyCal** | Booking owner slug, display metadata when public | Booking link path and page metadata |
-| **Acuity Scheduling** | Owner account ID | `owner` parameter in schedule links |
-| **Ticket Tailor** | Box-office owner slug, event ID | Event URL path |
-| **Humanitix** | Event host/organizer name when public | JSON-LD public event page data |
-| **Eventzilla** | Organizer name/profile when public | JSON-LD public event page data |
-| **TicketLeap** | Organizer slug, event ID | Event URL path |
-| **Universe** | Organizer name/profile when public | JSON-LD / public event page data |
+| **Stack Exchange** | `referral_account` | Editable, unsigned user ID appended by built-in `/q/` and `/a/` Share links |
+| **Spotify Wrapped** | `actual_sharer` | `shareData.sender_name` and related public Wrapped card data |
+| **Instagram** | `sharer_account` | Account data associated with an `igsh` share token when exposed |
+| **TikTok** | `sharer_account` | Mobile share-page `shareUser` payload when profile sharing is enabled |
+| **Xiaohongshu / RED** | `sharer_account` | Valid `appuid` on a content URL with a companion app-share marker; `shareRedId` alone is metadata, not an account ID |
+| **Bilibili** | `sharer_account` | Numeric `mid` or `share_mid` on a content URL with a companion app-share marker |
+| **NetEase Music** | `sharer_account` | `userid` on a recognized content route with a content ID; profile enrichment is best effort |
+| **Zhihu** | `sharer_account` | Valid legacy `utm_member` value |
+| **Pinterest** | `sharer_account` | Public invite metadata associated with a `pin.it` share |
+| **Substack** | `referral_account` | Referral account in note preload data |
+| **Suno** | `sharer_account` | Public account associated with a Suno share code |
+| **Reddit** | `sharer_signal` | Experimental: emits only when a `/r/{subreddit}/s/{id}` response explicitly exposes a sharer field; current public links commonly fail closed |
+| **Discord** | `invite_creator` | Inviter object returned by the public invite API when available |
+| **Claude** | `share_creator` | Creator metadata on a public shared conversation |
+| **Perplexity** | `thread_author` | Author metadata on a public search thread |
+| **YouTube Clips** | `clip_creator` | `clipAttributionRenderer` on an existing Clip page |
+| **Twitch Clips** | `clip_creator` | Clipper account returned by Twitch clip data |
+| **Google Photos** | `album_owner` | Owner actor exposed by a public shared album |
+| **Partiful** | `event_host` | Host account exposed by a public event invite |
+| **Lu.ma** | `event_host` | Host account exposed by a public event page |
+| **Eventbrite** | `event_organizer` | Organizer metadata exposed by a public event page |
+| **Microsoft Teams** | `meeting_organizer` | Organizer and tenant IDs in the meeting `context` field |
+| **Microsoft SharePoint** | `sharepoint_owner` | Personal-site slug and a clearly labeled heuristic email candidate |
+| **WhatsApp** | `recipient_account` | Phone number targeted by a click-to-chat URL |
+| **QQ Contact** | `recipient_account` | QQ number targeted by a WPA contact URL |
+| **Steam Trade** | `trade_offer_owner` | Account ID and token in a user-created trade-offer URL |
+| **OneDrive Personal** | `storage_owner` | Personal storage CID or resource owner container |
+| **Baidu Pan** | `share_owner` | `uk` value in supported legacy Netdisk share links |
+| **Cash App** | `profile_target` | Cashtag in a payment profile URL |
+| **Venmo** | `profile_target` | Username or user ID in a profile or QR URL |
+| **PayPal.Me** | `profile_target` | Payment profile handle and public metadata |
+| **Ko-fi** | `profile_target` | Creator profile handle and public metadata |
+| **Buy Me a Coffee** | `profile_target` | Creator profile handle and public metadata |
+| **Patreon** | `profile_target` | Creator profile handle and public metadata |
+| **Linktree** | `profile_target` | Profile handle and public metadata |
+| **Beacons** | `profile_target` | Profile handle and public metadata |
+| **Calendly** | `booking_owner` | Scheduling owner slug and public metadata |
+| **Cal.com** | `booking_owner` | Scheduling owner username and public metadata |
+| **TidyCal** | `booking_owner` | Booking owner slug and public title metadata |
+| **YouCanBookMe** | `booking_owner` | Booking owner subdomain and public metadata |
+| **SavvyCal** | `booking_owner` | Booking owner slug and public metadata |
+| **Acuity Scheduling** | `booking_owner` | Numeric `owner` value in a scheduling URL |
+| **Ticket Tailor** | `event_organizer` | Box-office owner slug and event ID |
+| **Humanitix** | `event_organizer` | Organizer metadata on a public event page |
+| **Meetup** | `event_organizer` | Group, event, and host metadata on a public event page |
+| **TicketLeap** | `event_organizer` | Organizer slug and event ID in the event URL |
+| **Eventzilla** | `event_organizer` | Organizer metadata on a public event page |
+| **Universe** | `event_organizer` | Organizer metadata on a public event page |
+| **Loom** | `recording_owner` | Recording owner metadata in public page state |
+| **Medal.tv** | `clip_creator` | Recorder or poster metadata in public clip data |
+
+## Deliberately unsupported cases
+
+- **Ordinary YouTube links:** Watch, Shorts, and `si` parameters do not publicly resolve to the person who forwarded the URL. Existing YouTube Clip pages can expose the person who created the Clip artifact. YouTube [retired creation of new Clips in April 2026](https://support.google.com/youtube/answer/10332730?hl=en-gb), but existing Clip URLs remain viewable.
+- **Telegram invite links:** Current invite hashes are opaque lookup values. Telegram's public invite-check result does not expose the invite creator. OSAINT rejects these instead of guessing an ID from arbitrary Base64 bytes.
+- **Ordinary Spotify links:** Track, album, artist, playlist, `si`, and `dlsi` values are not treated as sender identities. Only the distinct public Wrapped share-card format is routed.
+- **Owner-only content URLs:** A normal post or media URL is not treated as sharer evidence merely because it contains the original creator's username.
 
 ## Requirements
 
-- Node.js 18+
-- Windows / macOS / Linux
-- On Windows, **Windows Terminal with the Command Prompt profile** is recommended for the cleanest box drawing, redraws, and line spacing.
-- PowerShell works for normal output, but it can render live redraws and wrapped box lines less cleanly.
+- Node.js 20 or newer
+- Windows, macOS, or Linux
+- Windows Terminal with the Command Prompt profile is recommended on Windows for the cleanest box drawing and animation redraws
 
 ## Install
 
@@ -78,95 +104,75 @@ npm install
 
 ## Usage
 
-On Windows, open Windows Terminal and choose the Command Prompt profile, then run OSAINT from there for the cleanest terminal UI.
-
-Always wrap URLs in quotes. This is especially important in PowerShell because `&` characters are parsed as command separators.
+Always wrap URLs in quotes. This is required in shells that treat `&` as a command separator.
 
 ```bash
-# Analyze a share link
-node osaint.js "https://vm.tiktok.com/abc123/"
-node osaint.js "https://www.instagram.com/reel/abc/?igsh=xyz"
-node osaint.js "https://www.xiaohongshu.com/explore/abc?appuid=xyz"
-node osaint.js "https://www.bilibili.com/video/BV...?mid=123456"
-node osaint.js "https://pan.baidu.com/share/link?shareid=123&uk=456"
+# An unsigned Stack Exchange referral-account field
+node osaint.js "https://stackoverflow.com/q/11828270/819887"
+
+# Link-tied sharer or referral signals
+node osaint.js "https://www.instagram.com/reel/example/?igsh=example"
+node osaint.js "https://www.bilibili.com/video/BVexample?mid=123456&share_session_id=example"
 node osaint.js "https://music.163.com/song/123/?userid=456"
-node osaint.js "https://www.zhihu.com/question/123?utm_member=..."
-node osaint.js "https://www.spotify.com/wrapped-share/0123456789abcdef0123456789abcdef"
+
+# Contextual identities, labeled by role
 node osaint.js "https://youtube.com/clip/Ugkx..."
-node osaint.js "https://photos.app.goo.gl/abc123"
-node osaint.js "https://partiful.com/e/abc123def456"
-node osaint.js "https://lu.ma/abc123"
-node osaint.js "https://www.eventbrite.com/e/example-tickets-1234567890"
 node osaint.js "https://teams.microsoft.com/l/meetup-join/..."
-node osaint.js "https://wa.me/447577138632"
-node osaint.js "https://steamcommunity.com/tradeoffer/new/?partner=123456&token=abcdEF12"
-node osaint.js 'https://cash.app/$example'
-node osaint.js "https://cal.com/baseline"
-node osaint.js "https://tidycal.com/example/15-minute-meeting"
-node osaint.js "https://www.tickettailor.com/events/example/123456"
-node osaint.js "https://events.humanitix.com/example-event"
-node osaint.js "https://www.loom.com/share/696fb088168d43f4ac339d3043065869"
-node osaint.js "https://discord.gg/invite123"
+node osaint.js "https://wa.me/447700900000"
 
-# JSON output (for scripting)
-node osaint.js "https://vm.tiktok.com/abc123/" --json
-
-# Quiet mode (no banner)
-node osaint.js "https://vm.tiktok.com/abc123/" -q
-
-# Clean JSON only
-node osaint.js "https://vm.tiktok.com/abc123/" -q --json
+# Automation-friendly output
+node osaint.js "https://stackoverflow.com/q/11828270/819887" --json
+node osaint.js "https://stackoverflow.com/q/11828270/819887" -q --json
 ```
+
+Example JSON shape:
+
+```json
+{
+  "user_id": "819887",
+  "identity_role": "referral_account",
+  "is_sharer_identity": true,
+  "identity_confidence": "unsigned_url_claim",
+  "account_validation": "api_confirmed",
+  "post_validation": "api_confirmed",
+  "share_source": "built-in-share-referrer"
+}
+```
+
+Network enrichment is best effort. Stack Exchange confirms the account and referenced post when its public API is reachable, rejects confirmed missing IDs, and reports validation status. A parser can still return an offline ID from a structurally valid link when optional public metadata is unavailable.
 
 ## Commands
 
 ```bash
-node osaint.js --help            # Quick usage guide
-node osaint.js --howto           # Detailed guide per platform
-node osaint.js --commands        # Full command list
-node osaint.js --list            # Show all supported platforms
-node osaint.js --test            # Run self-test suite
+node osaint.js --help
+node osaint.js --howto
+node osaint.js --commands
+node osaint.js --list
+node osaint.js --test
 
-# Banner customization
-node osaint.js --banner          # Preview all 13 banner styles
-node osaint.js --set-banner=N    # Set banner to style N
-
-# Animation customization
-node osaint.js --animations      # Preview all 52 animation styles
-node osaint.js --anim-demo=N     # Live demo of a specific animation
-node osaint.js --set-loading=N   # Set the active/scanning animation
-node osaint.js --set-idle=N      # Set the completed/idle animation
+node osaint.js --banner
+node osaint.js --set-banner=N
+node osaint.js --animations
+node osaint.js --anim-demo=N
+node osaint.js --set-loading=N
+node osaint.js --set-idle=N
 ```
 
-## How It Works
+## Safety and reliability
 
-Different platforms expose link-tied account data in different ways. These are the main social modules:
+- Routing parses the URL once, requires HTTPS, and accepts only exact supported hosts and paths. Lookalike domains, embedded target URLs, fragments, credentials, and other schemes are rejected.
+- Native HTTP requests have a 15-second total timeout, a streaming 5 MiB download cap, and a five-redirect limit. Short-link modules restrict redirects to expected platform hosts.
+- TLS-fingerprint request chains share a 15-second budget, with cold-start initialization deducted before the request is issued, and reject bodies over 5 MiB before parsing. The current `node-tls-client` API materializes a response before OSAINT can measure it, so that TLS limit is a post-buffer acceptance cap rather than a streaming memory bound.
+- Native HTTP requests preflight resolved addresses and reject local, private, link-local, multicast, and documentation ranges. This reduces SSRF risk but is not DNS pinning; fixed platform allowlists remain the primary trust boundary.
+- Dynamic parsers fail closed when a response contains metadata but no attributable identity.
+- Terminal text is stripped of control sequences before display.
+- Non-interactive and JSON modes have no cosmetic spinner delay.
+- Shared TLS workers are closed on success, parser errors, self-tests, signals, and uncaught failures.
+- OSAINT uses only publicly accessible data and does not require authentication.
 
-- **Instagram**: The `igsh` parameter in share URLs is a tracking ID tied to the sharer's account. Instagram can embed the sharer's profile in the page response via `xdt_get_relationship_for_shid_logged_out`. Availability varies per share and is controlled server-side.
+## Research notes
 
-- **TikTok**: Short links (`vm.tiktok.com`) redirect through TikTok's servers. When fetched with a mobile User-Agent, TikTok can embed the sharer's profile in the page HTML under `webapp.reflow.global.shareUser`. This only works if the sharer has "Display profile when sharing links" enabled in privacy settings.
-
-- **Spotify Wrapped**: Public Wrapped share links expose a `shareData.sender_name` field in the page payload, along with sender image and share-card metadata. OSAINT only supports Wrapped share links and intentionally rejects normal track, artist, album, and playlist URLs because their `si` and `dlsi` tokens have not been verified to expose the sharer.
-
-- **Discord**: Invite codes are resolved through Discord's public invite API, which can return the inviter's username, ID, avatar, and account creation date decoded from the snowflake ID.
-
-- **Telegram**: Some legacy `joinchat` hashes are base64-encoded. The first 4 bytes can decode to the invite creator's numeric user ID. No HTTP request is needed.
-
-## Technical Details
-
-- Uses `node-tls-client` for Chrome TLS fingerprint impersonation to bypass CloudFlare and bot detection
-- Mobile Android User-Agent for TikTok, required because TikTok only serves sharer data to mobile browsers
-- Managed real-time terminal region keeps completed steps stable and the active operation on the bottom row
-- 52 customizable spinner animations sourced from `unicode-animations` and `rattles` (braille grids, ASCII spinners, braille patterns)
-- 13 swappable ASCII art banner styles
-- All settings persist to `.osaint-config.json`
-
-## Privacy Notes
-
-- This tool only analyzes publicly accessible data embedded in share URLs
-- No authentication or login is required
-- Some platforms allow users to disable share tracking in their privacy settings (e.g., TikTok's "Display profile when sharing links")
-- For educational and research purposes only
+Current public probing also examined Quora, Wattpad, Kwai/Kuaishou, Douyin, Kick, Snapchat, LINE, WeChat, Lemon8, and other large platforms. Promising-looking values were not added unless their account semantics and a safe public resolution path could be demonstrated. Opaque analytics, device, install, campaign, and per-share tokens are not identities.
 
 ## License
 
