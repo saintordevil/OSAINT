@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLogUpdate } from 'log-update';
 
-import { Spinner } from '../src/spinner.js';
+import { runStep, Spinner } from '../src/spinner.js';
 import { stripAnsi } from '../src/colors.js';
 
 const loadingAnimation = {
@@ -114,6 +114,12 @@ test('non-TTY mode prints completed steps once without animation control codes',
     assert.match(lines[1], /Second step.*network unavailable/);
     assert.doesNotMatch(output, /\x1b\[[0-9;?]*[A-HJKSTfhilmn]/);
     assert.doesNotMatch(output, /\r/);
+});
+
+test('non-TTY steps do not incur cosmetic animation delays', async () => {
+    const started = Date.now();
+    await runStep('Fast non-TTY step', async () => 'done');
+    assert.ok(Date.now() - started < 250, 'non-TTY step waited for the animation minimum');
 });
 
 test('reset clears a running live region and starts the next run cleanly', () => {

@@ -1,19 +1,25 @@
 // Discord invite link analyzer
 // Uses Discord's public invite API to retrieve invite metadata
 
+import { fetchHtml, normalizeUrl } from './_helpers.js';
+
 export default async function discord(url) {
     try {
-        const match = url.match(/(?:discord\.com\/invite|discord\.gg)\/([\w-]+)/i);
+        const parsed = normalizeUrl(url, 'https://discord.gg');
+        const host = parsed?.hostname.toLowerCase();
+        if (!parsed || !['discord.gg', 'discord.com', 'www.discord.com'].includes(host)) {
+            return { error: 'Invalid Discord invite URL' };
+        }
+        const match = parsed.pathname.match(host === 'discord.gg' ? /^\/([\w-]+)\/?$/i : /^\/invite\/([\w-]+)\/?$/i);
         if (!match) return { error: 'Invalid Discord invite URL' };
 
         const code = match[1];
-        const res = await fetch(`https://discord.com/api/v9/invites/${code}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        const { error, html } = await fetchHtml(`https://discord.com/api/v9/invites/${encodeURIComponent(code)}`, {
+            Accept: 'application/json',
         });
+        if (error) return { error: `Discord API request failed: ${error}` };
 
-        if (!res.ok) return { error: `Discord API returned ${res.status}` };
-
-        const json = await res.json();
+        const json = JSON.parse(html);
         const inviter = json.inviter;
         if (!inviter) return { error: 'No inviter data in this invite (may be a vanity URL)' };
 

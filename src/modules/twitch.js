@@ -2,29 +2,28 @@
 // Uses Twitch's public GQL API to get clip curator (clipper) identity
 // The curator is the viewer who captured the clip - their username and ID are exposed
 
-import { fetch as tlsFetch, initTLS } from 'node-tls-client';
-
-let _tlsReady = false;
-async function ensureTLS() {
-    if (!_tlsReady) { await initTLS(); _tlsReady = true; }
-}
+import { tlsFetch } from './_tls.js';
+import { normalizeUrl } from './_helpers.js';
 
 const CLIENT_ID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
 export default async function twitch(url) {
     try {
         // Extract clip slug from URL
-        const clipMatch = url.match(/(?:clips\.twitch\.tv\/|\/clip\/)([\w-]+)/i);
+        const parsed = normalizeUrl(url, 'https://www.twitch.tv');
+        const host = parsed?.hostname.toLowerCase();
+        const clipMatch = host === 'clips.twitch.tv'
+            ? parsed.pathname.match(/^\/([\w-]+)\/?$/i)
+            : (['twitch.tv', 'www.twitch.tv'].includes(host)
+                ? parsed.pathname.match(/^\/[A-Za-z0-9_]+\/clip\/([\w-]+)\/?$/i)
+                : null);
         if (!clipMatch) {
             return { error: 'Only Twitch clip URLs are supported (clips.twitch.tv or /clip/)' };
         }
 
         const slug = clipMatch[1];
-        await ensureTLS();
-
         // Query Twitch GQL for clip data including curator
         const res = await tlsFetch('https://gql.twitch.tv/gql', {
-            clientIdentifier: 'chrome_131',
             method: 'POST',
             headers: {
                 'Client-Id': CLIENT_ID,

@@ -17,7 +17,7 @@ export default async function eventbrite(url) {
         if (!match) return { error: 'Invalid Eventbrite event URL' };
 
         const eventId = match[1];
-        const data = { event_id: eventId, share_id: eventId, share_type: 'event-invite', profile_url: parsed.toString() };
+        const data = { event_id: eventId, share_id: eventId, share_type: 'event-invite', share_url: parsed.toString() };
 
         const { html } = await fetchHtml(parsed).catch(() => ({}));
         if (html) {

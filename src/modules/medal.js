@@ -10,7 +10,7 @@ export default async function medal(url) {
         const match = parsed.pathname.match(/\/clips\/([A-Za-z0-9_-]{8,})/i);
         if (!match) return { error: 'Invalid Medal.tv clip URL' };
 
-        const data = { share_id: match[1], clip_id: match[1], share_type: 'game-clip', profile_url: parsed.toString() };
+        const data = { share_id: match[1], clip_id: match[1], share_type: 'game-clip', share_url: parsed.toString() };
         const { html } = await fetchHtml(parsed).catch(() => ({}));
         if (html) {
             const jsonLd = extractJsonLd(html).find(item => item?.author || item?.creator);

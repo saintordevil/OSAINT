@@ -33,7 +33,7 @@ export default async function loom(url) {
             share_id: parsed.videoId,
             share_type: 'recording-share',
             ...owner,
-            profile_url: parsed.parsed.toString(),
+            share_url: parsed.parsed.toString(),
         }) };
     } catch (err) {
         return { error: err.message };

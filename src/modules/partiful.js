@@ -8,38 +8,54 @@ function extractNextData(html) {
     try { return JSON.parse(match[1]); } catch { return null; }
 }
 
-function findHosts(value, found = []) {
-    if (!value || typeof value !== 'object') return found;
-    if (Array.isArray(value)) {
-        for (const item of value) findHosts(item, found);
-        return found;
-    }
-    if ((value.hosts || value.hostUsers) && Array.isArray(value.hosts || value.hostUsers)) {
-        found.push(...(value.hosts || value.hostUsers));
-    }
-    for (const child of Object.values(value)) findHosts(child, found);
-    return found;
+function hostId(host) {
+    return host?.id || host?.userId || host?.api_id || null;
+}
+
+function selectEventHost(pageProps) {
+    const event = pageProps?.event;
+    if (!event || typeof event !== 'object') return null;
+
+    const candidates = [
+        ...(Array.isArray(pageProps.hosts) ? pageProps.hosts : []),
+        ...(Array.isArray(event.hosts) ? event.hosts : []),
+        ...(Array.isArray(event.hostUsers) ? event.hostUsers : []),
+        ...(Array.isArray(event.owners) ? event.owners : []),
+        event.createdBy,
+    ].filter(Boolean);
+    const ownerIds = new Set([
+        ...(Array.isArray(event.ownerIds) ? event.ownerIds : []),
+        hostId(event.createdBy),
+    ].filter(Boolean).map(String));
+
+    if (ownerIds.size) return candidates.find(candidate => ownerIds.has(String(hostId(candidate)))) || null;
+    return event.createdBy || event.owners?.[0] || null;
 }
 
 export default async function partiful(url) {
     try {
         const parsed = normalizeUrl(url, 'https://partiful.com');
-        if (!parsed || !/^(?:www\.)?(?:partiful\.com|go\.partiful\.com)$/i.test(parsed.hostname)) return { error: 'Invalid Partiful event URL' };
+        if (!parsed || parsed.protocol !== 'https:' || !/^(?:www\.)?(?:partiful\.com|go\.partiful\.com)$/i.test(parsed.hostname)) return { error: 'Invalid Partiful event URL' };
 
-        const match = parsed.pathname.match(/^\/e\/([A-Za-z0-9_-]+)/);
-        if (!match) return { error: 'Invalid Partiful event URL' };
-
-        const { html, error } = await fetchHtml(parsed);
+        const { html, error, res } = await fetchHtml(parsed, {}, {
+            allowedRedirectHosts: host => /^(?:www\.)?(?:partiful\.com|go\.partiful\.com)$/i.test(host),
+        });
         if (error) return { error };
 
+        const resolved = normalizeUrl(res?.url || parsed.toString());
+        if (!resolved || resolved.protocol !== 'https:' || !/^(?:www\.)?partiful\.com$/i.test(resolved.hostname)) {
+            return { error: 'Partiful link resolved to an unexpected host' };
+        }
+        const match = resolved.pathname.match(/^\/e\/([A-Za-z0-9_-]+)/);
+        if (!match) return { error: 'Invalid Partiful event URL' };
+
         const nextData = extractNextData(html);
-        const event = nextData?.props?.pageProps?.event;
-        const host = findHosts(nextData).find(Boolean) ||
-            event?.owners?.[0] ||
-            (event?.createdBy?.id ? event.createdBy : null);
+        const pageProps = nextData?.props?.pageProps;
+        const event = pageProps?.event;
+        const host = selectEventHost(pageProps);
         if (!host) return { error: 'Partiful page does not expose host data' };
 
-        const userId = host.id || host.userId;
+        const userId = hostId(host);
         if (!userId && !host.name && !host.displayName) {
             return { error: 'Partiful page does not expose host identity data' };
         }
@@ -54,7 +70,7 @@ export default async function partiful(url) {
             instagram: host.instagram,
             twitter: host.twitter,
             host_count: event?.ownerIds?.length,
-            profile_url: parsed.toString(),
+            share_url: resolved.toString(),
         }) };
     } catch (err) {
         return { error: err.message };

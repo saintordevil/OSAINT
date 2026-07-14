@@ -1,4 +1,4 @@
-import { R, G, Y, B, M, C, W, DG, BR, BG, BY, BB, BM, BC, BW, BOLD, DIM, RST, stripAnsi, visLen } from './colors.js';
+import { R, G, Y, B, M, C, W, DG, BR, BG, BY, BB, BM, BC, BW, BOLD, DIM, RST, sanitizeTerminalText, stripAnsi, visLen } from './colors.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -14,7 +14,7 @@ const DISPLAY_NAMES = {
     xiaohongshu: 'Xiaohongshu', bilibili: 'Bilibili', baidu: 'Baidu Pan',
     netease: 'NetEase Music', zhihu: 'Zhihu',
     claude: 'Claude', perplexity: 'Perplexity', microsoft: 'Microsoft', pinterest: 'Pinterest',
-    substack: 'Substack', suno: 'Suno', spotify: 'Spotify Wrapped', telegram: 'Telegram',
+    substack: 'Substack', suno: 'Suno', spotify: 'Spotify Wrapped',
     youtube: 'YouTube', googlephotos: 'Google Photos', partiful: 'Partiful',
     luma: 'Lu.ma', eventbrite: 'Eventbrite', teams: 'Teams',
     whatsapp: 'WhatsApp', qqcontact: 'QQ Contact', steamtrade: 'Steam Trade',
@@ -26,7 +26,7 @@ const DISPLAY_NAMES = {
     tickettailor: 'Ticket Tailor', humanitix: 'Humanitix', meetup: 'Meetup',
     ticketleap: 'TicketLeap', eventzilla: 'Eventzilla', universe: 'Universe',
     loom: 'Loom', medal: 'Medal.tv',
-    twitch: 'Twitch', reddit: 'Reddit',
+    twitch: 'Twitch', reddit: 'Reddit', stackexchange: 'Stack Exchange',
 };
 function displayName(name) { return DISPLAY_NAMES[name] || name; }
 
@@ -216,7 +216,7 @@ export function printBanner() {
         '', top, empty(),
         ...style.art,
         empty(), mid,
-        row(`${DG}Share Link Intelligence${RST}${' '.repeat(34)}${DIM}${DG}v1.0.0${RST}`),
+        row(`${DG}Share Link Intelligence${RST}${' '.repeat(34)}${DIM}${DG}v2.0.0${RST}`),
         line('bottom'), '',
     ];
     console.log(lines.join('\n'));
@@ -225,10 +225,11 @@ export function printBanner() {
 // ─── TARGET INFO ─────────────────────────────────────────────────────────────
 
 export function printTargetBox(platform, url) {
+    const safeUrl = sanitizeTerminalText(url);
     console.log([
         line('='),
         row(`${DG}Platform ${DG}>>${RST}  ${W}${displayName(platform)}${RST}`),
-        row(`${DG}Target   ${DG}>>${RST}  ${DIM}${W}${url}${RST}`),
+        row(`${DG}Target   ${DG}>>${RST}  ${DIM}${W}${safeUrl}${RST}`),
         line('bottom'),
         '',
     ].join('\n'));
@@ -259,10 +260,11 @@ export function printResults(data, platform) {
 // ─── ERROR ───────────────────────────────────────────────────────────────────
 
 export function printError(message) {
+    const safeMessage = sanitizeTerminalText(message);
     console.log([
         line('='),
         row(`${BR}>> ${R}Error${RST}`),
-        row(`${DIM}${W}${message}${RST}`),
+        row(`${DIM}${W}${safeMessage}${RST}`),
         line('bottom'),
         '',
     ].join('\n'));
@@ -370,9 +372,11 @@ export function printHowTo() {
         top,
         row(`${DG}>>${RST} ${W}How OSAINT Works${RST}`),
         mid,
-        row(`${DIM}${W}When someone shares a link on social media, the${RST}`),
-        row(`${DIM}${W}platform injects tracking data into the URL that${RST}`),
-        row(`${DIM}${W}can reveal ${C}who shared it${DIM}${W}. OSAINT extracts this.${RST}`),
+        row(`${DIM}${W}Public links can expose the sender, referrer, owner,${RST}`),
+        row(`${DIM}${W}organizer, target account, or artifact creator.${RST}`),
+        row(`${DIM}${W}OSAINT labels that relationship as ${C}Identity Role${DIM}${W}.${RST}`),
+        row(`${DIM}${W}Sharer Identity=yes includes sharer and referral signals.${RST}`),
+        row(`${DIM}${W}Only ${C}actual_sharer${DIM}${W} denotes a proven sender field.${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Instagram${RST}  ${DG}>> igsh= parameter${RST}`),
         mid,
@@ -404,8 +408,9 @@ export function printHowTo() {
         mid,
         row(`${DG}>>${RST} ${W}YouTube${RST}  ${DG}>> clip creator from clip page${RST}`),
         mid,
-        row(`${DIM}${W}Create or copy a YouTube Clip link.${RST}`),
+        row(`${DIM}${W}Analyze an existing legacy YouTube Clip link.${RST}`),
         row(`${DIM}${W}Clip pages expose the person who ${C}clipped${DIM}${W} it.${RST}`),
+        row(`${DIM}${W}This is not the account that later forwarded the link.${RST}`),
         row(`${DIM}${W}Returns: ${C}clipper name, clip ID${RST}`),
         row(`${DG}Ex: ${DIM}${C}youtube.com/clip/Ugkx...${RST}`),
         mid,
@@ -416,26 +421,27 @@ export function printHowTo() {
         row(`${DIM}${W}Returns: ${C}user ID, tenant ID${RST}  ${DG}(offline)${RST}`),
         row(`${DG}Ex: ${DIM}${C}teams.microsoft.com/l/meetup-join/...${RST}`),
         mid,
-        row(`${DG}>>${RST} ${W}Microsoft${RST}  ${DG}>> email in URL (offline)${RST}`),
+        row(`${DG}>>${RST} ${W}Microsoft${RST}  ${DG}>> account slug heuristic${RST}`),
         mid,
         row(`${DIM}${W}Click Share >> Copy Link on a SharePoint file.${RST}`),
-        row(`${DIM}${W}The sharer's email is encoded in the URL path.${RST}`),
-        row(`${DIM}${W}Returns: ${C}email address${RST}  ${DG}(no HTTP needed)${RST}`),
+        row(`${DIM}${W}A personal-site slug can resemble an email address.${RST}`),
+        row(`${DIM}${W}Returns: ${C}site slug, heuristic email candidate${RST}`),
         row(`${DG}Ex: ${DIM}${C}company-my.sharepoint.com/.../jane_doe_co_com/${RST}`),
         mid,
-        row(`${DG}>>${RST} ${W}Telegram${RST}  ${DG}>> creator ID from hash (offline)${RST}`),
+        row(`${DG}>>${RST} ${W}Stack Exchange${RST}  ${DG}>> unsigned referral account ID${RST}`),
         mid,
-        row(`${DIM}${W}Create an invite link in a group.${RST}`),
-        row(`${DIM}${W}The hash decodes to the creator's numeric ID.${RST}`),
-        row(`${DIM}${W}Returns: ${C}creator user ID${RST}  ${DG}(no HTTP needed)${RST}`),
-        row(`${DG}Ex: ${DIM}${C}t.me/joinchat/BgFGOkI4OTk${RST}`),
+        row(`${DIM}${W}Built-in /q/ and /a/ links append an account ID.${RST}`),
+        row(`${DIM}${W}The path is editable, so this is not proof of sender.${RST}`),
+        row(`${DIM}${W}Role: ${C}referral_account${DIM}${W}; public API enrichment is optional.${RST}`),
+        row(`${DIM}${W}Returns: ${C}user ID, name, profile, reputation${RST}`),
+        row(`${DG}Ex: ${DIM}${C}stackoverflow.com/q/11828270/819887${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Bilibili${RST}  ${DG}>> sharer MID in app URL${RST}`),
         mid,
         row(`${DIM}${W}Share from the Bilibili app.${RST}`),
-        row(`${DIM}${W}Some app URLs include the sharer's ${C}mid${DIM}${W}.${RST}`),
+        row(`${DIM}${W}Requires a numeric ${C}mid${DIM}${W} plus an app-share marker.${RST}`),
         row(`${DIM}${W}Returns: ${C}user ID, profile URL${RST}  ${DG}(offline)${RST}`),
-        row(`${DG}Ex: ${DIM}${C}bilibili.com/video/BV...?mid=123${RST}`),
+        row(`${DG}Ex: ${DIM}${C}bilibili.com/video/BV...?mid=123&share_session_id=x${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Baidu Pan${RST}  ${DG}>> sharer UK in old links${RST}`),
         mid,
@@ -475,8 +481,9 @@ export function printHowTo() {
         row(`${DG}>>${RST} ${W}Profile Hubs${RST} ${DG}Patreon, Linktree, Beacons${RST}`),
         row(`${DG}>>${RST} ${W}Event Hosts${RST} ${DG}Humanitix, Meetup, TicketLeap, Universe${RST}`),
         row(`${DG}>>${RST} ${W}Recordings${RST}  ${DG}Loom and Medal clip owners${RST}`),
-        row(`${DG}>>${RST} ${W}Xiaohongshu${RST} ${DG}Sharer ID from app share params${RST}`),
-        row(`${DG}>>${RST} ${W}Reddit${RST}      ${DG}Sharer from /r/<sub>/s/<id> link${RST}`),
+        row(`${DG}>>${RST} ${W}Xiaohongshu${RST} ${DG}appuid plus companion app-share marker${RST}`),
+        row(`${DG}>>${RST} ${W}Reddit${RST}      ${DG}Experimental; explicit sharer field only${RST}`),
+        row(`${DG}>>${RST} ${W}Telegram${RST}    ${DG}Current invite hashes are rejected as opaque${RST}`),
         mid,
         row(`${DG}>>${RST} ${W}Customization${RST}`),
         mid,
@@ -510,7 +517,7 @@ const LABELS = {
     reader_installed_at: 'Reader Installed', photo_url: 'Photo', handle: 'Handle',
     share_token: 'Share Token', share_source: 'Share Source',
     post_id: 'Post ID', resolved_url: 'Resolved URL',
-    clip_id: 'Clip ID', channel: 'Channel', share_method: 'Share Method',
+    clip_id: 'Clip ID', channel: 'Channel',
     subreddit: 'Subreddit', profile_sharing: 'Profile Sharing',
     share_red_id: 'Share Red ID', author_share: 'Author Share',
     share_id: 'Share ID', device_id: 'Device ID', file_id: 'File ID',
@@ -524,6 +531,12 @@ const LABELS = {
     phone_number: 'Phone', account_id: 'Account ID', owner_id: 'Owner ID',
     event_id: 'Event ID', booking_id: 'Booking ID', box_office: 'Box Office',
     cashtag: 'Cashtag',
+    identity_role: 'Identity Role', share_url: 'Share URL', clip_title: 'Clip Title',
+    is_sharer_identity: 'Sharer Identity', identity_confidence: 'Identity Confidence',
+    account_validation: 'Account Validation', post_validation: 'Post Validation',
+    created_text: 'Created', view_count: 'Views', site: 'Site', post_type: 'Post Type',
+    reputation: 'Reputation', user_type: 'User Type', site_slug: 'Site Slug',
+    email_candidate: 'Email Candidate', email_confidence: 'Email Confidence',
 };
 
 function fmtLabel(key) {
@@ -533,7 +546,7 @@ function fmtLabel(key) {
 function fmtValue(key, value) {
     if (typeof value === 'boolean') return value ? `${G}Yes${RST}` : `${R}No${RST}`;
     if (typeof value === 'number') return `${W}${value.toLocaleString()}${RST}`;
-    const s = String(value);
+    const s = sanitizeTerminalText(value);
     return s.startsWith('http') ? `${C}${s}${RST}` : `${W}${s}${RST}`;
 }
 
@@ -542,7 +555,7 @@ function fmtValue(key, value) {
 export function showBannerPreviews() {
     const top = line('=');
     const mid = line('-');
-    const sub = row(`${DG}Share Link Intelligence${RST}${' '.repeat(34)}${DIM}${DG}v1.0.0${RST}`);
+    const sub = row(`${DG}Share Link Intelligence${RST}${' '.repeat(34)}${DIM}${DG}v2.0.0${RST}`);
     const cfg = loadConfig();
     const styles = getStyles();
 

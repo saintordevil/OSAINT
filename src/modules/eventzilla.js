@@ -11,7 +11,7 @@ export default async function eventzilla(url) {
         if (parts[0] !== 'e' || !parts[1]) return { error: 'Invalid Eventzilla event URL' };
 
         const idMatch = parts[1].match(/-(\d{6,})$/);
-        const data = { share_id: idMatch?.[1] || parts[1], event_id: idMatch?.[1], share_type: 'event-invite', profile_url: parsed.toString() };
+        const data = { share_id: idMatch?.[1] || parts[1], event_id: idMatch?.[1], share_type: 'event-invite', share_url: parsed.toString() };
 
         const { html } = await fetchHtml(parsed).catch(() => ({}));
         if (html) {

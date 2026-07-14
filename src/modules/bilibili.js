@@ -1,6 +1,8 @@
 // Bilibili share link metadata reader
 // Extracts sharer MID when app-generated share URLs include it.
 
+import { fetchHtml, normalizeUrl } from './_helpers.js';
+
 const HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     'Accept': 'text/html,application/xhtml+xml',
@@ -81,13 +83,8 @@ function first(params, keys) {
 }
 
 function parseBilibiliUrl(raw) {
-    let parsed;
-    try {
-        parsed = new URL(raw);
-    } catch {
-        parsed = new URL(raw, 'https://www.bilibili.com');
-    }
-
+    const parsed = normalizeUrl(raw, 'https://www.bilibili.com');
+    if (!parsed) return null;
     if (!isBilibiliHost(parsed.hostname.toLowerCase())) return null;
     return parsed;
 }
@@ -105,8 +102,8 @@ export default async function bilibili(url) {
 
         if (isShortUrl) {
             try {
-                const res = await fetch(url, { headers: HEADERS, redirect: 'follow' });
-                if (res.url && res.url !== url) {
+                const { res } = await fetchHtml(initialUrl, HEADERS, { allowedRedirectHosts: isBilibiliHost });
+                if (res?.url && res.url !== initialUrl.toString()) {
                     rawUrls.push(res.url);
                     const resolved = parseBilibiliUrl(res.url);
                     if (resolved && isContentPath(resolved.pathname)) hasContentUrl = true;
@@ -124,14 +121,20 @@ export default async function bilibili(url) {
         const shareMid = getParam(params, 'share_mid');
         const appShareMid = hasContentUrl && first(params, ['mid', 'mid_from']);
         const sharerMid = shareMid || appShareMid;
+        const shareMarkers = [
+            'share_session_id', 'share_source', 'share_medium', 'share_plat',
+            'unique_k', 'timestamp', 'vd_source',
+        ];
+        const hasShareMarker = shareMarkers.some(key => getParam(params, key));
 
-        if (!sharerMid || !/^\d+$/.test(sharerMid)) {
-            return { error: 'Bilibili URL does not include a sharer MID' };
+        if (!hasContentUrl || !hasShareMarker || !/^[1-9]\d{0,19}$/.test(sharerMid || '')) {
+            return { error: 'Bilibili URL does not include a validated app-share MID and companion marker' };
         }
 
         const data = {
             user_id: sharerMid,
             profile_url: `https://space.bilibili.com/${sharerMid}`,
+            identity_confidence: 'unsigned_url_claim',
         };
 
         const shareToken = first(params, ['share_session_id', 'unique_k']);

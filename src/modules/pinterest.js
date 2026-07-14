@@ -2,31 +2,28 @@
 // Follows the redirect to get invite code, then queries metadata API
 // Uses node-tls-client for TLS fingerprint impersonation
 
-import { fetch as tlsFetch, initTLS } from 'node-tls-client';
-
-let _tlsReady = false;
-async function ensureTLS() {
-    if (!_tlsReady) { await initTLS(); _tlsReady = true; }
-}
+import { createTlsDeadline, getHeader, tlsFetch } from './_tls.js';
+import { normalizeUrl } from './_helpers.js';
 
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
 export default async function pinterest(url) {
     try {
-        const match = url.match(/pin\.it\/([\w]+)/i);
+        const parsed = normalizeUrl(url, 'https://pin.it');
+        const host = parsed?.hostname.toLowerCase();
+        const match = ['pin.it', 'www.pin.it'].includes(host) ? parsed.pathname.match(/^\/([\w]+)\/?$/i) : null;
         if (!match) return { error: 'Invalid Pinterest short URL' };
 
         const shortCode = match[1];
-        await ensureTLS();
-
+        const remainingTimeout = createTlsDeadline();
         // Step 1: Follow redirect to get invite code
         const redirectRes = await tlsFetch(`https://api.pinterest.com/url_shortener/${shortCode}/redirect/`, {
-            clientIdentifier: 'chrome_131',
             followRedirects: false,
             headers: { 'User-Agent': UA },
+            timeoutMs: remainingTimeout(),
         });
 
-        const location = redirectRes.headers?.Location?.[0] || redirectRes.headers?.location?.[0];
+        const location = getHeader(redirectRes.headers, 'location');
         if (!location) return { error: 'No redirect location found' };
 
         // Extract invite code and pin ID from redirect URL
@@ -46,7 +43,6 @@ export default async function pinterest(url) {
         });
 
         const apiRes = await tlsFetch(`https://www.pinterest.com/resource/InviteCodeMetadataResource/get/?${params}`, {
-            clientIdentifier: 'chrome_131',
             headers: {
                 'User-Agent': UA,
                 'Accept': 'application/json',
@@ -56,6 +52,7 @@ export default async function pinterest(url) {
                 'X-Pinterest-Source-Url': `/pin/${pinId}/sent/?invite_code=${inviteCode}`,
                 'Referer': 'https://www.pinterest.com/',
             },
+            timeoutMs: remainingTimeout(),
         });
 
         if (!apiRes.ok) return { error: `Pinterest API returned ${apiRes.status}` };

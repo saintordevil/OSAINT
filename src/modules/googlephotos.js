@@ -20,6 +20,10 @@ function parseShare(rawUrl) {
     return null;
 }
 
+function isGooglePhotosHost(hostname) {
+    return ['photos.google.com', 'photos.app.goo.gl'].includes(hostname.toLowerCase());
+}
+
 function extractOwner(html) {
     const ownerIndex = html.indexOf('(Owner)');
     if (ownerIndex === -1) return null;
@@ -41,15 +45,14 @@ export default async function googlephotos(url) {
         const parsed = parseShare(url);
         if (!parsed) return { error: 'Invalid Google Photos shared album URL' };
 
-        const res = await fetch(parsed.parsed.toString(), { redirect: 'follow' });
-        if (!res.ok) return { error: `Google Photos shared album returned HTTP ${res.status}` };
+        const { error, res, html } = await fetchHtml(parsed.parsed, {}, { allowedRedirectHosts: isGooglePhotosHost });
+        if (error) return { error: `Google Photos shared album request failed: ${error}` };
 
         const finalShare = parseShare(res.url) || parsed;
         if (!finalShare.shareId || (finalShare.parsed.hostname === 'photos.google.com' && !finalShare.shareKey)) {
             return { error: 'Google Photos URL did not resolve to a public shared album' };
         }
 
-        const html = await res.text();
         const owner = extractOwner(html);
         if (!owner) return { error: 'Google Photos shared album page does not expose a verifiable owner marker' };
 
@@ -58,7 +61,7 @@ export default async function googlephotos(url) {
             share_type: 'shared-album',
             ...owner,
             share_token: finalShare.shareKey,
-            profile_url: finalShare.parsed.toString(),
+            share_url: finalShare.parsed.toString(),
         }) };
     } catch (err) {
         return { error: err.message };

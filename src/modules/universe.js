@@ -12,7 +12,7 @@ export default async function universe(url) {
         const match = (slug || '').match(/^(.+)-tickets-([A-Za-z0-9]+)$/);
         if (!match) return { error: 'Invalid Universe event URL' };
 
-        const data = { share_id: slug, event_id: match[2], share_type: 'event-invite', profile_url: parsed.toString() };
+        const data = { share_id: slug, event_id: match[2], share_type: 'event-invite', share_url: parsed.toString() };
         const { html } = await fetchHtml(parsed).catch(() => ({}));
         if (html) {
             const event = firstJsonLdOfType(html, 'Event');

@@ -44,6 +44,10 @@ export class Spinner {
         );
     }
 
+    get isTTY() {
+        return this._isTTY;
+    }
+
     // Start spinner with a loading message
     loading(msg) {
         this._msg = msg;
@@ -177,14 +181,14 @@ export async function runStep(label, fn, opts = {}) {
     try {
         const result = await fn();
         const elapsed = Date.now() - start;
-        if (elapsed < MIN_DISPLAY_MS) {
+        if (s.isTTY && elapsed < MIN_DISPLAY_MS) {
             await new Promise(r => setTimeout(r, MIN_DISPLAY_MS - elapsed));
         }
         s.done(opts.doneMsg || label);
         return result;
     } catch (err) {
         const elapsed = Date.now() - start;
-        if (elapsed < MIN_DISPLAY_MS) {
+        if (s.isTTY && elapsed < MIN_DISPLAY_MS) {
             await new Promise(r => setTimeout(r, MIN_DISPLAY_MS - elapsed));
         }
         s.fail(label, err.message);

@@ -17,7 +17,7 @@ export default async function qqcontact(url) {
         return { data: compactData({
             user_id: uin,
             account_id: uin,
-            profile_url: parsed.toString(),
+            share_url: parsed.toString(),
             share_type: 'contact-link',
         }) };
     } catch (err) {

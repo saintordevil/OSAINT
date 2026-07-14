@@ -22,10 +22,27 @@ export const CLR  = "\x1b[2K";
 export const HIDE = "\x1b[?25l";
 export const SHOW = "\x1b[?25h";
 
-// Strip ANSI codes for length calculation
-const ANSI_RE = /\x1b\[[^m]*m/g;
+// Strip terminal escape sequences before measuring or displaying remote text.
+const OSC_RE = /\x1b\][^\x07]*(?:\x07|\x1b\\)/g;
+const CSI_RE = /\x1b\[[0-?]*[ -/]*[@-~]/g;
+const ESC_RE = /\x1b[@-_]/g;
+const BIDI_CONTROL_RE = /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/gi;
+const TERMINAL_JSON_ESCAPE_RE = /[\u007f-\u009f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]/gi;
 export function stripAnsi(s) {
-    return s.replace(ANSI_RE, "");
+    return String(s).replace(OSC_RE, '').replace(CSI_RE, '').replace(ESC_RE, '');
+}
+export function escapeJsonForTerminal(s) {
+    return String(s).replace(TERMINAL_JSON_ESCAPE_RE, char =>
+        `\\u${char.codePointAt(0).toString(16).padStart(4, '0')}`,
+    );
+}
+export function sanitizeTerminalText(s) {
+    return stripAnsi(s)
+        .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, '')
+        .replace(BIDI_CONTROL_RE, '')
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 export function visLen(s) {
     return stripAnsi(s).length;

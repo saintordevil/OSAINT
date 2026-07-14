@@ -2,23 +2,24 @@
 // Uses node-tls-client to bypass CloudFlare and hit the chat_snapshots API
 // Returns the creator's display name and UUID
 
-import { fetch as tlsFetch, initTLS } from 'node-tls-client';
+import { tlsFetch } from './_tls.js';
+import { normalizeUrl } from './_helpers.js';
 
-let _tlsReady = false;
-async function ensureTLS() {
-    if (!_tlsReady) { await initTLS(); _tlsReady = true; }
+const CLAUDE_HOSTS = new Set(['claude.ai', 'www.claude.ai']);
+
+export function parseClaudeShareUrl(url) {
+    const parsed = normalizeUrl(url, 'https://claude.ai');
+    if (!parsed || parsed.protocol !== 'https:' || !CLAUDE_HOSTS.has(parsed.hostname.toLowerCase())) return null;
+    const match = parsed.pathname.match(/^\/share\/([a-f0-9-]+)\/?$/i);
+    return match?.[1] || null;
 }
 
-export default async function claude(url) {
+export default async function claude(url, { fetchTls = tlsFetch } = {}) {
     try {
-        const match = url.match(/claude\.ai\/share\/([a-f0-9-]+)/i);
-        if (!match) return { error: 'Invalid Claude share URL' };
+        const shareId = parseClaudeShareUrl(url);
+        if (!shareId) return { error: 'Invalid Claude share URL' };
 
-        const shareId = match[1];
-        await ensureTLS();
-
-        const res = await tlsFetch(`https://claude.ai/api/chat_snapshots/${shareId}`, {
-            clientIdentifier: 'chrome_131',
+        const res = await fetchTls(`https://claude.ai/api/chat_snapshots/${shareId}`, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                 'Accept': 'application/json',

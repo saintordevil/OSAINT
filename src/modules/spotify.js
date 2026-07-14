@@ -1,19 +1,16 @@
 // Spotify Wrapped share link metadata reader
 // Wrapped public share pages expose shareData.sender_name for the link sender.
 
+import { fetchHtml, normalizeUrl } from './_helpers.js';
+
 const HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     'Accept': 'text/html,application/xhtml+xml',
 };
 
 function parseUrl(rawUrl) {
-    let parsed;
-    try {
-        parsed = new URL(rawUrl);
-    } catch {
-        parsed = new URL(rawUrl, 'https://www.spotify.com');
-    }
-
+    const parsed = normalizeUrl(rawUrl, 'https://www.spotify.com');
+    if (!parsed) return null;
     const host = parsed.hostname.toLowerCase();
     if (!['www.spotify.com', 'spotify.com', 'open.spotify.com'].includes(host)) return null;
 
@@ -95,16 +92,8 @@ export default async function spotify(url) {
             return { error: 'Invalid Spotify Wrapped share URL' };
         }
 
-        const res = await fetch(parsed.parsed.toString(), {
-            redirect: 'follow',
-            headers: HEADERS,
-        });
-
-        if (!res.ok) {
-            return { error: `Spotify Wrapped share page returned HTTP ${res.status}` };
-        }
-
-        const html = await res.text();
+        const { error, res, html } = await fetchHtml(parsed.parsed, HEADERS);
+        if (error) return { error: `Spotify Wrapped share page request failed: ${error}` };
         const shareData = extractShareData(html);
         if (!shareData) {
             return { error: 'Spotify Wrapped share page does not expose sender data' };

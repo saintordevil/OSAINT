@@ -6,7 +6,8 @@
 import { printBanner, printTargetBox, printResults, printError, printPlatformList, printHelp, printCommands, printHowTo, displayName } from './src/banner.js';
 import { getSpinner, runStep, resetSteps } from './src/spinner.js';
 import { detectPlatform, listPlatforms, loadParser } from './src/router.js';
-import { C, G, R, DG, DIM, W, RST } from './src/colors.js';
+import { closeTLS } from './src/modules/_tls.js';
+import { C, G, R, DG, DIM, W, RST, escapeJsonForTerminal } from './src/colors.js';
 
 // ─── ARGS ────────────────────────────────────────────────────────────────────
 
@@ -28,15 +29,21 @@ const flags = {
 };
 const url = args.find(a => !a.startsWith('-'));
 
+function parseIndex(value) {
+    return /^\d+$/.test(String(value || '')) ? Number(value) : Number.NaN;
+}
+
 // ─── CLEANUP ─────────────────────────────────────────────────────────────────
 
-function cleanup() {
+async function cleanup() {
     const s = getSpinner();
     s.stop();
+    if (process.stdout.isTTY) process.stdout.write('\x1b[?25h');
+    try { await closeTLS(); } catch {}
 }
 
 function printJson(payload) {
-    console.log(JSON.stringify(payload, null, 2));
+    console.log(escapeJsonForTerminal(JSON.stringify(payload, null, 2)));
 }
 
 function outputError(message) {
@@ -47,8 +54,14 @@ function outputError(message) {
     }
 }
 
-process.on('SIGINT', () => { cleanup(); process.exit(0); });
-process.on('uncaughtException', (err) => { cleanup(); printError(err.message); process.exit(1); });
+function fail(message, exitCode = 1) {
+    outputError(message);
+    process.exitCode = exitCode;
+}
+
+process.on('SIGINT', async () => { await cleanup(); process.exit(130); });
+process.on('SIGTERM', async () => { await cleanup(); process.exit(143); });
+process.on('uncaughtException', async (err) => { await cleanup(); outputError(err.message); process.exit(1); });
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
@@ -58,11 +71,12 @@ async function main() {
     if (flags.setBanner) {
         const { setBannerStyle, getBannerStyleNames } = await import('./src/banner.js');
         const names = getBannerStyleNames();
-        const num = parseInt(flags.setBanner);
+        const num = parseIndex(flags.setBanner);
         if (isNaN(num) || num < 1 || num > names.length) {
             console.log(`\n   ${R}Invalid style.${RST} Pick 1-${names.length}:\n`);
             names.forEach((n, i) => console.log(`   ${C}${i + 1}${RST}  ${W}${n}${RST}`));
             console.log('');
+            process.exitCode = 2;
             return;
         }
         setBannerStyle(num);
@@ -74,9 +88,10 @@ async function main() {
     if (flags.setLoading) {
         const { setLoadingAnimation, getAnimationCount, getAnimationNames } = await import('./src/animations.js');
         const count = getAnimationCount();
-        const num = parseInt(flags.setLoading);
+        const num = parseIndex(flags.setLoading);
         if (isNaN(num) || num < 1 || num > count) {
             console.log(`\n   ${R}Invalid animation.${RST} Pick 1-${count}. Run ${W}--animations${RST} to see all.\n`);
+            process.exitCode = 2;
             return;
         }
         setLoadingAnimation(num);
@@ -88,9 +103,10 @@ async function main() {
     if (flags.setIdle) {
         const { setIdleAnimation, getAnimationCount, getAnimationNames } = await import('./src/animations.js');
         const count = getAnimationCount();
-        const num = parseInt(flags.setIdle);
+        const num = parseIndex(flags.setIdle);
         if (isNaN(num) || num < 1 || num > count) {
             console.log(`\n   ${R}Invalid animation.${RST} Pick 1-${count}. Run ${W}--animations${RST} to see all.\n`);
+            process.exitCode = 2;
             return;
         }
         setIdleAnimation(num);
@@ -102,9 +118,10 @@ async function main() {
     if (flags.animDemo) {
         const { demoAnimation, getAnimationCount } = await import('./src/animations.js');
         const count = getAnimationCount();
-        const num = parseInt(flags.animDemo);
+        const num = parseIndex(flags.animDemo);
         if (isNaN(num) || num < 1 || num > count) {
             console.log(`\n   ${R}Invalid animation.${RST} Pick 1-${count}. Run ${W}--animations${RST} to see all.\n`);
+            process.exitCode = 2;
             return;
         }
         await demoAnimation(num);
@@ -154,7 +171,7 @@ async function main() {
 
     if (!url) {
         if (!flags.quiet && !flags.json) printBanner();
-        outputError('No URL provided. Use --help for usage.');
+        fail('No URL provided. Use --help for usage.', 2);
         return;
     }
 
@@ -165,7 +182,7 @@ async function main() {
     // Detect platform first (quick, no spinner needed)
     const platform = detectPlatform(url);
     if (!platform) {
-        outputError('Unsupported URL. Use --list to see supported platforms.');
+        fail('Unsupported URL. Use --list to see supported platforms.', 2);
         return;
     }
 
@@ -173,13 +190,14 @@ async function main() {
         const parser = await loadParser(platform.name);
         const result = await parser(url);
         printJson(result.error ? { error: result.error } : result.data);
+        if (result.error) process.exitCode = 1;
         return;
     }
 
     if (flags.quiet) {
         const parser = await loadParser(platform.name);
         const result = await parser(url);
-        if (result.error) outputError(result.error);
+        if (result.error) fail(result.error);
         else printResults(result.data, platform.name);
         return;
     }
@@ -207,7 +225,7 @@ async function main() {
     if (result.error) {
         s.stop();
         console.log('');
-        outputError(result.error);
+        fail(result.error);
         return;
     }
 
@@ -215,7 +233,7 @@ async function main() {
 
     // Let rain animate on all completed lines for a good while
     s.idle('');
-    await new Promise(r => setTimeout(r, 2500));
+    if (s.isTTY) await new Promise(r => setTimeout(r, 2500));
 
     // Stop spinner, print results
     s.stop();
@@ -284,9 +302,9 @@ async function selfTest() {
             ['https://www.universe.com/events/example-event-tickets-ABC123', 'universe'],
             ['https://www.loom.com/share/696fb088168d43f4ac339d3043065869', 'loom'],
             ['https://medal.tv/games/counter-strike-2/clips/m1bjETMCznQ-3Tv6p', 'medal'],
-            ['https://t.me/joinchat/AAAAAAA',            'telegram'],
             ['https://clips.twitch.tv/TestClipSlug',     'twitch'],
             ['https://reddit.com/r/test/s/abc123',       'reddit'],
+            ['https://stackoverflow.com/q/123456/819887', 'stackexchange'],
         ];
         let pass = 0;
         for (const [u, expected] of tests) {
@@ -328,11 +346,13 @@ async function selfTest() {
     await runStep('Testing strict parsers', async () => {
         const tg = await loadParser('telegram');
         const tgR = await tg('https://t.me/joinchat/AQAAAA');
-        if (!tgR.data && !tgR.error) throw new Error('Telegram decoder failed');
+        if (tgR.data || !/opaque/i.test(tgR.error || '')) throw new Error('Telegram opaque-hash negative failed');
 
         const ms = await loadParser('microsoft');
         const msR = await ms('https://x-my.sharepoint.com/:f:/g/personal/john_doe_contoso_com/abc');
-        if (msR.data?.email !== 'john.doe@contoso.com') throw new Error('Microsoft parser failed');
+        if (msR.data?.site_slug !== 'john_doe_contoso_com' || msR.data?.email_candidate !== 'john.doe@contoso.com') {
+            throw new Error('Microsoft parser failed');
+        }
 
         const xhs = await loadParser('xiaohongshu');
         const xhsR = await xhs('https://www.xiaohongshu.com/explore/abc123?appuid=671e6b46000000001d021e13&share_from_user_hidden=true&xhsshare=CopyLink');
@@ -355,7 +375,17 @@ async function selfTest() {
         if (!baiduLookalike.error) throw new Error('Baidu host negative failed');
 
         const netease = await loadParser('netease');
-        const neteaseR = await netease('https://music.163.com/song/27971936/?userid=132726004');
+        const originalFetch = globalThis.fetch;
+        let neteaseR;
+        try {
+            globalThis.fetch = async () => new Response(JSON.stringify({ profile: {} }), {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+            });
+            neteaseR = await netease('https://music.163.com/song/27971936/?userid=132726004');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
         if (neteaseR.data?.user_id !== '132726004') throw new Error('NetEase parser failed');
         const neteaseNoUser = await netease('https://music.163.com/song/27971936/?id=27971936');
         if (!neteaseNoUser.error) throw new Error('NetEase strict negative failed');
@@ -476,7 +506,7 @@ async function selfTest() {
 
     // Let all completed lines rain together
     s.idle('');
-    await new Promise(r => setTimeout(r, 2500));
+    if (s.isTTY) await new Promise(r => setTimeout(r, 2500));
     s.stop();
 
     console.log('');
@@ -487,7 +517,6 @@ async function selfTest() {
 // ─── RUN ─────────────────────────────────────────────────────────────────────
 
 main().catch(err => {
-    cleanup();
     outputError(err.message);
-    process.exit(1);
-});
+    process.exitCode = 1;
+}).finally(cleanup);

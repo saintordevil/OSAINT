@@ -1,7 +1,7 @@
 {
   "name": "osaint",
-  "version": "1.0.0",
-  "description": "OSAINT - Extract public account identifiers from share, invite, and profile links across 50 modules",
+  "version": "2.0.0",
+  "description": "OSAINT - Classify public identity signals in share, invite, profile, and event links across 50 modules",
   "main": "osaint.js",
   "bin": {
     "osaint": "./osaint.js"
@@ -9,8 +9,9 @@
   "type": "module",
   "scripts": {
     "start": "node osaint.js",
-    "test": "npm run test:spinner && npm run test:self",
+    "test": "npm run test:unit && npm run test:self",
     "test:self": "node osaint.js --test",
+    "test:unit": "node --test",
     "test:spinner": "node --test test/spinner.test.js"
   },
   "keywords": [
@@ -21,6 +22,9 @@
   ],
   "author": "OSAINT",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "log-update": "6.1.0",
     "node-tls-client": "^2.1.0",

@@ -3,6 +3,8 @@
 // Only the "sender" object in this response contains the actual sharer's identity
 // The user_id in shid params and instapp:owner_user_id are the POSTER, not the sharer
 
+import { extractJsonObjects, fetchHtml, normalizeUrl } from './_helpers.js';
+
 const HEADERS = {
     'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
     'Accept': 'text/html',
@@ -10,23 +12,22 @@ const HEADERS = {
 
 export default async function instagram(url) {
     try {
-        if (!/instagram\.com\/(reel|p)\//i.test(url)) {
+        const parsed = normalizeUrl(url, 'https://www.instagram.com');
+        if (!parsed || !['instagram.com', 'www.instagram.com', 'm.instagram.com'].includes(parsed.hostname.toLowerCase()) ||
+            !/^\/(?:reel|p)\/[^/]+\/?$/i.test(parsed.pathname)) {
             return { error: 'Invalid Instagram URL - must be a reel or post link' };
         }
 
-        const res = await fetch(url, { headers: HEADERS, redirect: 'follow' });
-        if (!res.ok) return { error: `Request failed with status ${res.status}` };
-
-        const html = await res.text();
+        const { error, html } = await fetchHtml(parsed, HEADERS);
+        if (error) return { error };
         const data = {};
 
         // Method 1: New format - xdt_get_relationship_for_shid_logged_out with sender object
         // This is the ONLY field that contains the actual SHARER's identity
-        const xdtMatch = html.match(/"xdt_get_relationship_for_shid_logged_out"\s*:\s*\{[^}]*"sender"\s*:\s*(\{[^}]+\})/);
-        if (xdtMatch) {
+        const relationship = extractJsonObjects(html, 'xdt_get_relationship_for_shid_logged_out')[0];
+        const sender = relationship?.sender;
+        if (sender && typeof sender === 'object') {
             try {
-                const fixed = xdtMatch[1].replace(/\\\//g, '/');
-                const sender = JSON.parse(fixed);
                 if (sender.username) {
                     data.username = sender.username;
                     data.profile_url = `https://www.instagram.com/${sender.username}/`;
@@ -41,10 +42,9 @@ export default async function instagram(url) {
 
         // Method 2: Legacy format - user_for_shid_logged_out (older Instagram pages)
         if (Object.keys(data).length === 0) {
-            const shidMatch = html.match(/"user_for_shid_logged_out"\s*:\s*(\{[^}]+\})/);
-            if (shidMatch) {
+            const user = extractJsonObjects(html, 'user_for_shid_logged_out')[0];
+            if (user) {
                 try {
-                    const user = JSON.parse(shidMatch[1]);
                     if (user.username) {
                         data.username = user.username;
                         data.profile_url = `https://www.instagram.com/${user.username}/`;

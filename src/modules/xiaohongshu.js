@@ -1,10 +1,22 @@
 // Xiaohongshu / RED share link metadata reader
 // Extracts sharer identifiers that are embedded in app-generated share URLs.
 
+import { fetchHtml, normalizeUrl } from './_helpers.js';
+
 const HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     'Accept': 'text/html,application/xhtml+xml',
 };
+
+function isXiaohongshuHost(hostname) {
+    const host = hostname.toLowerCase();
+    return host === 'xiaohongshu.com' || host.endsWith('.xiaohongshu.com') ||
+        host === 'xhslink.com' || host.endsWith('.xhslink.com');
+}
+
+function isContentPath(pathname) {
+    return /^\/(?:explore|discovery\/item)\/[a-z0-9]+\/?$/i.test(pathname);
+}
 
 function collectParams(rawUrls) {
     const params = new Map();
@@ -69,16 +81,25 @@ function parseTimestamp(value) {
 
 export default async function xiaohongshu(url) {
     try {
-        if (!/(?:xiaohongshu\.com|xhslink\.com)\//i.test(url)) {
+        const parsed = normalizeUrl(url, 'https://www.xiaohongshu.com');
+        const host = parsed?.hostname.toLowerCase() || '';
+        if (!parsed || !isXiaohongshuHost(host)) {
             return { error: 'Invalid Xiaohongshu share URL' };
         }
 
-        const rawUrls = [url];
+        const rawUrls = [parsed.toString()];
+        let hasContentUrl = isContentPath(parsed.pathname);
 
-        if (/xhslink\.com\//i.test(url)) {
+        if (host === 'xhslink.com' || host.endsWith('.xhslink.com')) {
             try {
-                const res = await fetch(url, { headers: HEADERS, redirect: 'follow' });
-                if (res.url && res.url !== url) rawUrls.push(res.url);
+                const { res } = await fetchHtml(parsed, HEADERS, { allowedRedirectHosts: isXiaohongshuHost });
+                if (res?.url && res.url !== parsed.toString()) {
+                    rawUrls.push(res.url);
+                    const resolved = normalizeUrl(res.url);
+                    if (resolved && isXiaohongshuHost(resolved.hostname) && isContentPath(resolved.pathname)) {
+                        hasContentUrl = true;
+                    }
+                }
             } catch {
                 // Short-link resolution can fail behind regional checks; direct params still work.
             }
@@ -88,7 +109,11 @@ export default async function xiaohongshu(url) {
         const data = {};
 
         const appUid = getParam(params, 'appuid');
-        if (appUid) {
+        const shareMarkers = [
+            'xhsshare', 'share_from_user_hidden', 'share_id', 'apptime', 'xsec_source',
+        ];
+        const hasShareMarker = shareMarkers.some(key => getParam(params, key));
+        if (hasContentUrl && hasShareMarker && /^[a-f0-9]{24}$/i.test(appUid || '')) {
             data.user_id = appUid;
             data.profile_url = `https://www.xiaohongshu.com/user/profile/${encodeURIComponent(appUid)}`;
         }
@@ -96,8 +121,8 @@ export default async function xiaohongshu(url) {
         const shareRedId = getParam(params, 'shareRedId');
         if (shareRedId) data.share_red_id = shareRedId;
 
-        if (!data.user_id && !data.share_red_id) {
-            return { error: 'Xiaohongshu URL does not include sharer identity parameters' };
+        if (!data.user_id) {
+            return { error: 'Xiaohongshu URL does not include a validated app-share account ID and companion marker' };
         }
 
         const hidden = getParam(params, 'share_from_user_hidden');
@@ -120,6 +145,8 @@ export default async function xiaohongshu(url) {
 
         const postId = extractPostId(rawUrls);
         if (postId) data.post_id = postId;
+
+        data.identity_confidence = 'unsigned_url_claim';
 
         return { data };
     } catch (err) {
